@@ -205,8 +205,27 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
 .bar2{display:flex;align-items:center;gap:12px}.bar2 .bg{flex:1;height:10px;border-radius:6px;background:var(--line)}.bar2 .bg i{display:block;height:100%;border-radius:6px;background:var(--pt)}.bar2 span:first-child{width:110px;font-size:13px}.bar2 b{min-width:32px;text-align:right}
 /* presensi */
 input[type=time]{width:100%;padding:10px 12px;border:1px solid var(--fld);border-radius:8px;background:var(--card)}
-.pclk{font-size:44px;font-weight:800;line-height:1.1;color:var(--pt);margin:16px 0 4px;font-variant-numeric:tabular-nums}
-.pbtn{font-size:18px;padding:16px 28px}
+.pg{max-width:560px;margin:0 auto;padding:24px 0 40px;display:flex;flex-direction:column;gap:14px}
+.phd{background:var(--p);color:#fff;border-radius:18px;padding:20px 22px}
+.phd small{display:block;color:#E3EFF1;font-size:13px}
+.phd b{display:block;font-size:20px;margin:2px 0}
+.pclk{font-size:46px;font-weight:800;line-height:1.1;margin-top:10px;font-variant-numeric:tabular-nums}
+.pc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.pc h3{font-size:16px;margin-bottom:6px}
+.pdu{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pdu>div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column}
+.pdu b{font-size:26px;line-height:1.2}
+.pst{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.pn{flex:none;width:32px;height:32px;border-radius:50%;background:var(--line);color:var(--ink);font-weight:800;display:grid;place-items:center}
+.pst.ok .pn{background:#15803D;color:#fff}
+.pst.bad .pn{background:#B42318;color:#fff}
+.pb{flex:1;min-width:0;display:flex;flex-direction:column}
+.pb img{width:72px;height:72px;object-fit:cover;border-radius:10px;margin-top:6px}
+.pbtn{width:100%;font-size:18px;padding:16px;border-radius:14px}
+.pbtn:disabled,.bt:disabled{opacity:.5;cursor:not-allowed}
+#pcam video{width:100%;border-radius:12px;background:#000;max-height:60vh}
+#pcam .pcb{width:min(420px,100%)}
+.mir{transform:scaleX(-1)}
 </style>
 </head>
 <body>
@@ -571,8 +590,8 @@ function refreshPublic() {
   });
 }
 
-/* ============ PRESENSI (halaman karyawan) ============ */
-var P = {tok: null, d: null, tab: null};
+/* ============ PRESENSI (halaman siswa) ============ */
+var P = {tok: null, d: null, tab: null, sf: null, gps: null, bc: null, qt: 0};
 try { P.tok = sessionStorage.getItem('wp_ptok'); } catch (e) {}
 function ptok(t) { P.tok = t; try { t ? sessionStorage.setItem('wp_ptok', t) : sessionStorage.removeItem('wp_ptok'); } catch (e) {} }
 function pApi(a, d) { return api(a, Object.assign({token: P.tok}, d || {})); }
@@ -580,66 +599,134 @@ function jam(s) { return s ? String(s).slice(0, 5) : '–'; }
 function pOn() { return S.cur.t === 'tab' && S.cur.id === P.tab; }
 function pTick() { var c = document.getElementById('pclk'); if (c) c.textContent = new Date().toLocaleTimeString('id-ID', {hour12: false}); }
 setInterval(pTick, 1000);
+function loadJs(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+function hav(a, b, c, d) { var r = Math.PI / 180, x = (c - a) * r, y = (d - b) * r, h = Math.sin(x / 2) * Math.sin(x / 2) + Math.cos(a * r) * Math.cos(c * r) * Math.sin(y / 2) * Math.sin(y / 2); return 2 * 6371000 * Math.asin(Math.sqrt(h)); }
+function presReset() { P.sf = P.gps = P.bc = null; clearInterval(P.qt); camClose(); }
 function presView(t) {
   S.cur = {t: 'tab', id: t.id}; P.tab = t.id; nav(); window.scrollTo(0, 0);
   if (!P.tok) return presLogin();
-  $('#view').innerHTML = '<div class="wrap"><article class="art"><h1>' + esc(t.nama) + '</h1><p class="meta">Memuat…</p></article></div>';
+  $('#view').innerHTML = '<div class="wrap"><div class="pg"><p class="meta">Memuat…</p></div></div>';
   pApi('pStatus').then(function (d) { if (pOn()) { P.d = d; presDash(); } })
     .catch(function (e) { if (!pOn()) return; if (/Sesi/.test(msg(e))) { ptok(null); presLogin(msg(e)); } else fail(e); });
 }
 function presLogin(err) {
   var k = ''; try { k = localStorage.getItem('wp_pk') || ''; } catch (e) {}
-  $('#view').innerHTML = '<div class="wrap"><article class="art"><h1>Presensi</h1><p class="meta">Masuk dengan kode dan PIN dari pembimbing.</p>' +
-    '<form class="box" id="pForm" style="margin:16px 0 0;border:1px solid var(--line)">' +
-    '<div class="fg"><label for="pk">Kode siswa</label><input id="pk" value="' + esc(k) + '" autocomplete="username" autocapitalize="off" required></div>' +
+  $('#view').innerHTML = '<div class="wrap"><div class="pg"><div class="phd"><small>Presensi Prakerin</small><b>Masuk dengan akun siswa</b></div>' +
+    '<form class="pc" id="pForm"><div class="fg"><label for="pk">Kode siswa</label><input id="pk" value="' + esc(k) + '" autocomplete="username" autocapitalize="off" required></div>' +
     '<div class="fg"><label for="pp">PIN</label><input id="pp" type="password" inputmode="numeric" autocomplete="current-password" required></div>' +
-    '<div class="err" id="perr" role="alert">' + esc(err || '') + '</div><button class="btn" type="submit">Masuk</button></form></article></div>';
+    '<div class="err" id="perr" role="alert">' + esc(err || '') + '</div><button class="btn pbtn" type="submit">Masuk</button></form></div></div>';
+}
+function pstep(n, cls, title, desc, btn, extra) {
+  return '<div class="pst ' + cls + '"><div class="pn">' + (cls === 'ok' ? '✓' : cls === 'bad' ? '!' : n) + '</div><div class="pb"><b>' + title + '</b><span class="meta">' + desc + '</span>' + (extra || '') + '</div>' + btn + '</div>';
 }
 function presDash() {
-  var d = P.d, r = d.hari || {}, lk = /^(Izin|Sakit|Alpa)$/.test(r.status || '') && !r.masuk;
-  var aksi = lk ? '<p>Hari ini tercatat: <b>' + esc(r.status) + '</b>.</p>' :
-    !r.masuk ? '<button class="btn pbtn" data-pa="masuk">Presensi Masuk</button>' :
-    !r.pulang ? '<button class="btn pbtn" data-pa="pulang">Presensi Pulang</button>' :
-    '<p><b>Presensi hari ini selesai.</b> Terima kasih.</p>';
-  $('#view').innerHTML = '<div class="wrap"><article class="art"><h1>Presensi</h1><p class="meta">Halo, <b>' + esc(d.nama) + '</b>' + (d.sekolah ? ' (' + esc(d.sekolah) + ')' : '') + ' · ' + esc(fd(d.tanggal)) + '</p>' +
-    '<div class="pclk" id="pclk"></div><p class="meta">Jam masuk ' + esc(d.jam_masuk) + '. Waktu yang dicatat adalah waktu server.' + (d.radius ? ' Presensi hanya bisa dilakukan di lokasi usaha.' : '') + '</p>' +
-    '<div class="li"><div><b>Masuk</b><span class="meta">' + jam(r.masuk) + (r.status ? ' · ' + esc(r.status) : '') + '</span></div><div><b>Pulang</b><span class="meta">' + jam(r.pulang) + '</span></div></div>' +
-    '<div class="acts" style="margin:16px 0">' + aksi + '</div>' +
-    '<h3 style="margin:24px 0 8px">Riwayat terakhir</h3>' +
-    (d.riwayat.length ? d.riwayat.map(function (x) {
+  var d = P.d; if (d.peran === 'barcode') return presBarcode();
+  var r = d.hari || {}, lk = /^(Izin|Sakit|Alpa)$/.test(r.status || '') && !r.masuk, done = r.masuk && r.pulang;
+  var fr = function (t) { return t && Date.now() - t < 180000; }, g = P.gps || {};
+  var sOk = !!P.sf, gOk = !!(g.ok && fr(g.t)), bOk = !!(P.bc && fr(P.bc.t)), n = 0, st = '';
+  var bt = function (a, t) { return '<button class="bt" type="button" data-pa="' + a + '">' + t + '</button>'; };
+  if (d.selfie) st += pstep(++n, sOk ? 'ok' : '', 'Foto selfie', sOk ? 'Foto siap dikirim.' : 'Ambil foto wajah langsung dari kamera.', bt('selfie', sOk ? 'Ulangi' : 'Buka kamera'), sOk ? '<img src="' + P.sf + '" alt="Selfie">' : '');
+  if (d.radius > 0) {
+    var gd = g.busy ? 'Mencari lokasi…' : g.err ? 'Lokasi gagal dibaca. Izinkan akses lokasi lalu coba lagi.' : g.d === undefined ? 'Pastikan Anda berada di lokasi PKL.' : !fr(g.t) ? 'Hasil sudah kedaluwarsa, refresh lagi.' : g.ok ? 'Lokasi OK · ' + g.d + ' m dari lokasi PKL.' : 'Di luar area: ' + g.d + ' m (maksimal ' + d.radius + ' m).';
+    st += pstep(++n, gOk ? 'ok' : (g.d !== undefined && fr(g.t) && !g.ok) || g.err ? 'bad' : '', 'Cek lokasi GPS', gd, '<button class="bt" type="button" data-pa="gps"' + (g.busy ? ' disabled' : '') + '>Refresh GPS</button>');
+  }
+  if (d.barcode) st += pstep(++n, bOk ? 'ok' : '', 'Scan barcode', bOk ? 'Barcode terbaca.' : 'Scan barcode di layar lokasi PKL.', bt('scan', bOk ? 'Scan ulang' : 'Scan barcode'));
+  var ready = (!d.selfie || sOk) && (!d.radius || gOk) && (!d.barcode || bOk);
+  var aksi = lk ? '<p>Hari ini tercatat: <b>' + esc(r.status) + '</b>.</p>' : done ? '<p><b>Presensi hari ini selesai.</b> Terima kasih.</p>' :
+    '<button class="btn pbtn" data-pa="' + (r.masuk ? 'pulang' : 'masuk') + '"' + (ready ? '' : ' disabled') + '>' + (r.masuk ? 'Presensi Pulang' : 'Presensi Masuk') + '</button><p class="meta" style="text-align:center;margin:8px 0 0">' + (ready ? 'Waktu dicatat otomatis dari server.' : 'Selesaikan semua langkah di atas untuk mengaktifkan tombol.') + '</p>';
+  $('#view').innerHTML = '<div class="wrap"><div class="pg"><div class="phd"><small>' + esc(fd(d.tanggal)) + '</small><b>' + esc(d.nama) + '</b>' + (d.sekolah ? '<small>' + esc(d.sekolah) + '</small>' : '') +
+    '<div class="pclk" id="pclk"></div></div>' +
+    '<div class="pdu"><div><span class="meta">Masuk</span><b>' + jam(r.masuk) + '</b><span class="meta">' + esc(r.status || 'Belum presensi') + '</span></div><div><span class="meta">Pulang</span><b>' + jam(r.pulang) + '</b><span class="meta">Jam masuk ' + esc(d.jam_masuk) + '</span></div></div>' +
+    ((lk || done) ? '' : '<div class="pc"><h3>Langkah presensi</h3>' + st + '</div>') + '<div>' + aksi + '</div>' +
+    '<div class="pc"><h3>Riwayat terakhir</h3>' + (d.riwayat.length ? d.riwayat.map(function (x) {
       return '<div class="li"><div><b>' + esc(fd(x.tanggal)) + '</b><span class="meta">' + esc(x.status || '') + '</span></div><span>' + jam(x.masuk) + ' – ' + jam(x.pulang) + '</span></div>';
-    }).join('') : '<p class="meta">Belum ada riwayat.</p>') +
-    '<button class="bt" data-pa="keluar" style="margin-top:16px">Keluar</button></article></div>';
+    }).join('') : '<p class="meta">Belum ada riwayat.</p>') + '</div><button class="bt" data-pa="keluar">Keluar</button></div></div>';
   pTick();
 }
-function presAbsen(jenis, btn) {
-  btn.disabled = true;
-  var fail_ = function (e) { toast(msg(e), 1); if (/Sesi/.test(msg(e))) { ptok(null); presLogin(msg(e)); } else btn.disabled = false; };
-  var go = function (g) {
-    pApi('pAbsen', {jenis: jenis, lat: g ? g.coords.latitude : '', lng: g ? g.coords.longitude : ''}).then(function (d) {
-      P.d = d; if (pOn()) presDash(); toast(jenis === 'masuk' ? 'Presensi masuk tercatat.' : 'Presensi pulang tercatat.');
-    }).catch(fail_);
+/* kamera: selfie (depan) & pemindai barcode (belakang) */
+var CAM = {s: null, raf: 0};
+function camClose() { if (CAM.raf) cancelAnimationFrame(CAM.raf); CAM.raf = 0; if (CAM.s) CAM.s.getTracks().forEach(function (t) { t.stop(); }); CAM.s = null; var o = document.getElementById('pcam'); if (o) o.remove(); }
+function camOpen(kind) {
+  camClose();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('Browser tidak mendukung kamera. Gunakan Chrome.', 1); return; }
+  var o = document.createElement('div'); o.id = 'pcam'; o.className = 'modal';
+  o.innerHTML = '<div class="box pcb"><h2>' + (kind === 'qr' ? 'Scan barcode lokasi PKL' : 'Foto selfie') + '</h2><video id="pvid" class="' + (kind === 'qr' ? '' : 'mir') + '" playsinline muted autoplay></video><canvas id="pcv" hidden></canvas><div class="acts" style="margin-top:12px">' + (kind === 'qr' ? '' : '<button class="btn" type="button" id="pshot">Ambil foto</button>') + '<button class="bt" type="button" id="pcx">Batal</button></div></div>';
+  document.body.appendChild(o); $('#pcx').onclick = camClose;
+  navigator.mediaDevices.getUserMedia({video: {facingMode: kind === 'qr' ? 'environment' : 'user', width: {ideal: 720}}, audio: false}).then(function (s) {
+    CAM.s = s; var v = $('#pvid'); v.srcObject = s; v.play();
+    if (kind === 'qr') qrLoop(v); else $('#pshot').onclick = function () { shoot(v); };
+  }).catch(function () { camClose(); toast('Izin kamera ditolak atau kamera tidak tersedia.', 1); });
+}
+function shoot(v) {
+  var w = v.videoWidth, h = v.videoHeight; if (!w) return;
+  var k = Math.min(1, 640 / Math.max(w, h)), c = $('#pcv'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  P.sf = c.toDataURL('image/jpeg', 0.7); camClose(); presDash();
+}
+function qrLoop(v) {
+  var go = function () {
+    var c = document.createElement('canvas'), x = c.getContext('2d', {willReadFrequently: true});
+    var tick = function () {
+      if (!CAM.s) return;
+      if (v.videoWidth) {
+        var k = Math.min(1, 480 / v.videoWidth); c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
+        x.drawImage(v, 0, 0, c.width, c.height);
+        var r = jsQR(x.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
+        if (r && /^PRS\|/.test(r.data)) { P.bc = {text: r.data, t: Date.now()}; camClose(); presDash(); toast('Barcode terbaca.'); return; }
+      }
+      CAM.raf = requestAnimationFrame(tick);
+    };
+    tick();
   };
-  if (P.d.radius > 0) {
-    if (!navigator.geolocation) { toast('Perangkat tidak mendukung lokasi.', 1); btn.disabled = false; return; }
-    toast('Mencari lokasi…');
-    navigator.geolocation.getCurrentPosition(go, function () { toast('Izin lokasi diperlukan untuk presensi.', 1); btn.disabled = false; }, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0});
-  } else go(null);
+  window.jsQR ? go() : loadJs('https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js').then(go, function () { camClose(); toast('Gagal memuat pemindai. Periksa internet.', 1); });
+}
+function gpsCheck() {
+  if (!navigator.geolocation) { toast('Browser tidak mendukung lokasi.', 1); return; }
+  P.gps = {busy: 1}; presDash();
+  navigator.geolocation.getCurrentPosition(function (g) {
+    var d = Math.round(hav(g.coords.latitude, g.coords.longitude, P.d.lat, P.d.lng));
+    P.gps = {lat: g.coords.latitude, lng: g.coords.longitude, acc: g.coords.accuracy, d: d, ok: d <= P.d.radius, t: Date.now()}; if (pOn()) presDash();
+  }, function () { P.gps = {err: 1}; if (pOn()) presDash(); }, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0});
+}
+function presAbsen(jenis, btn) {
+  var lbl = btn.textContent, g = P.gps || {}; btn.disabled = true; btn.textContent = 'Mengirim…';
+  pApi('pAbsen', {jenis: jenis, lat: g.lat == null ? '' : g.lat, lng: g.lng == null ? '' : g.lng, acc: g.acc == null ? '' : g.acc, selfie: P.sf || '', ticket: P.bc ? P.bc.text : ''}).then(function (d) {
+    P.d = d; P.sf = P.gps = P.bc = null; if (pOn()) presDash(); toast(jenis === 'masuk' ? 'Presensi masuk tercatat.' : 'Presensi pulang tercatat.');
+  }).catch(function (e) {
+    toast(msg(e), 1);
+    if (/Sesi/.test(msg(e))) { ptok(null); presReset(); presLogin(msg(e)); } else { btn.disabled = false; btn.textContent = lbl; }
+  });
+}
+/* akun berperan "Layar barcode": menampilkan QR yang berganti otomatis di lokasi PKL */
+function presBarcode() {
+  $('#view').innerHTML = '<div class="wrap"><div class="pg"><div class="phd"><small>Layar barcode presensi</small><b>' + esc(P.d.nama) + '</b><div class="pclk" id="pclk"></div></div>' +
+    '<div class="pc" style="text-align:center"><div id="pqr" style="display:inline-block;background:#fff;padding:14px;border-radius:12px;min-width:120px;min-height:120px"></div><p class="meta" style="margin:10px 0 0">Tunjukkan layar ini kepada siswa. Barcode berganti otomatis; jangan difoto untuk dibagikan.</p></div>' +
+    '<button class="bt" data-pa="keluar">Keluar</button></div></div>';
+  pTick(); clearInterval(P.qt); qrRefresh(); P.qt = setInterval(qrRefresh, 20000);
+}
+function qrRefresh() {
+  if (!$('#pqr')) { clearInterval(P.qt); return; }
+  Promise.all([pApi('pBarcode'), window.QRCode ? 1 : loadJs('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js')]).then(function (a) {
+    var el = $('#pqr'); if (!el) return; el.innerHTML = '';
+    new QRCode(el, {text: a[0].text, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M});
+  }).catch(function (e) { if (/Sesi/.test(msg(e))) { clearInterval(P.qt); ptok(null); presLogin(msg(e)); } });
 }
 $('#view').addEventListener('submit', function (e) {
   if (e.target.id !== 'pForm') return; e.preventDefault();
   var b = e.target.querySelector('button'), k = $('#pk').value.trim(); b.disabled = true; $('#perr').textContent = '';
   api('pLogin', {kode: k, pin: $('#pp').value}).then(function (r) {
-    ptok(r.token); P.d = r.data; try { localStorage.setItem('wp_pk', k); } catch (x) {}
+    ptok(r.token); P.d = r.data; presReset(); try { localStorage.setItem('wp_pk', k); } catch (x) {}
     if (pOn()) presDash();
   }).catch(function (x) { $('#perr').textContent = /Aksi tidak dikenal/.test(msg(x)) ? 'Server belum diperbarui. Di Apps Script: Deploy > Kelola deployment > Edit > Versi baru.' : msg(x); b.disabled = false; });
 });
 $('#view').addEventListener('click', function (e) {
-  var b = e.target.closest('[data-pa]'); if (!b) return;
-  if (b.dataset.pa === 'keluar') { pApi('pLogout').catch(function () {}); ptok(null); presLogin(); return; }
-  presAbsen(b.dataset.pa, b);
+  var b = e.target.closest('[data-pa]'); if (!b) return; var a = b.dataset.pa;
+  if (a === 'keluar') { pApi('pLogout').catch(function () {}); ptok(null); presReset(); presLogin(); }
+  else if (a === 'selfie') camOpen('selfie');
+  else if (a === 'scan') camOpen('qr');
+  else if (a === 'gps') gpsCheck();
+  else presAbsen(a, b);
 });
-
 document.addEventListener('click', function (e) {
   var b = e.target.closest && e.target.closest('[data-gotab]'); if (b) go({t: 'tab', id: b.dataset.gotab});
 });
@@ -890,13 +977,14 @@ function secPres() {
     return '<div class="ph2"><h2>' + (ed ? 'Ubah data siswa' : 'Siswa baru') + '</h2></div><form data-form="kar">' +
       fld(['kode', 'Kode siswa', 'text', 'Dipakai untuk masuk, mis. S001 (huruf/angka tanpa spasi). Tidak bisa diubah setelah dibuat.'], e.kode).replace('name="kode"', 'name="kode"' + (ed ? ' readonly' : '')) +
       fld(['nama', 'Nama siswa', 'text'], e.nama) + fld(['sekolah', 'Asal sekolah', 'text', 'Contoh: SMK Negeri 1 Lubuk Pakam.'], e.sekolah) + fld(['pin', 'PIN (4–12 angka)', 'text', 'Berikan kode dan PIN ini kepada siswa.'], e.pin) +
+      '<div class="fg"><label for="f_peran">Peran akun</label><select id="f_peran" name="peran"><option value="siswa"' + (e.peran !== 'barcode' ? ' selected' : '') + '>Siswa (presensi)</option><option value="barcode"' + (e.peran === 'barcode' ? ' selected' : '') + '>Layar barcode (dipakai di lokasi PKL)</option></select><small>Buat 1 akun berperan Layar barcode, lalu login dengannya di HP/tablet/laptop di tempat PKL. Layar akan menampilkan QR yang berganti otomatis untuk discan siswa.</small></div>' +
       '<div class="fg"><label><input type="checkbox" name="aktif"' + (e.aktif !== 'tidak' ? ' checked' : '') + '> Aktif</label></div>' +
       '<div class="acts"><button class="btn" type="submit">Simpan</button><button class="bt" type="button" data-act="cancel">Batal</button></div></form>';
   }
   if (A.ed && A.ed.k === 'rp') {
     e = A.ed.v; ed = !!A.ed.edit;
     return '<div class="ph2"><h2>' + (ed ? 'Ubah catatan presensi' : 'Catatan presensi manual') + '</h2></div><form data-form="rp">' +
-      '<div class="fg"><label for="f_kode">Siswa</label><select id="f_kode" name="kode"' + (ed ? ' disabled' : '') + '>' + p.karyawan.map(function (k) { return '<option value="' + esc(k.kode) + '"' + (String(k.kode) === String(e.kode) ? ' selected' : '') + '>' + esc(k.nama) + ' (' + esc(k.kode) + ')</option>'; }).join('') + '</select></div>' +
+      '<div class="fg"><label for="f_kode">Siswa</label><select id="f_kode" name="kode"' + (ed ? ' disabled' : '') + '>' + p.karyawan.filter(function (k) { return k.peran !== 'barcode'; }).map(function (k) { return '<option value="' + esc(k.kode) + '"' + (String(k.kode) === String(e.kode) ? ' selected' : '') + '>' + esc(k.nama) + ' (' + esc(k.kode) + ')</option>'; }).join('') + '</select></div>' +
       fld(['tanggal', 'Tanggal', 'date'], e.tanggal).replace('name="tanggal"', 'name="tanggal"' + (ed ? ' disabled' : '')) +
       '<div class="fg"><label for="f_status">Status</label><select id="f_status" name="status">' + STS.map(function (s) { return '<option' + (e.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div>' +
       fld(['masuk', 'Jam masuk (opsional)', 'time'], String(e.masuk || '').slice(0, 5)) + fld(['pulang', 'Jam pulang (opsional)', 'time'], String(e.pulang || '').slice(0, 5)) +
@@ -911,23 +999,24 @@ function secPres() {
     fld(['presensi_toleransi', 'Toleransi keterlambatan (menit)', 'number'], st.presensi_toleransi) +
     fld(['presensi_radius', 'Radius lokasi (meter)', 'number', '0 = tanpa pembatasan lokasi. Jika diisi, siswa hanya bisa presensi dalam radius ini dari koordinat di bawah (HP harus mengizinkan lokasi).'], st.presensi_radius) +
     fld(['presensi_lat', 'Latitude lokasi usaha', 'text'], st.presensi_lat) + fld(['presensi_lng', 'Longitude lokasi usaha', 'text'], st.presensi_lng) +
+    '<div class="fg"><label><input type="checkbox" name="presensi_selfie"' + (st.presensi_selfie !== 'tidak' ? ' checked' : '') + '> Wajib foto selfie</label></div><div class="fg"><label><input type="checkbox" name="presensi_barcode"' + (st.presensi_barcode !== 'tidak' ? ' checked' : '') + '> Wajib scan barcode lokasi PKL</label></div>' +
     '<div class="acts"><button type="button" class="bt" data-act="geo">Pakai lokasi saya sekarang</button><button class="btn" type="submit">Simpan pengaturan</button></div></form>' +
     '<div class="ph2" style="margin-top:28px"><h3>Siswa prakerin</h3><button class="btn sm" data-act="newkar">Tambah siswa</button></div>' +
     (p.karyawan.length ? p.karyawan.map(function (k) {
-      return '<div class="li"><div><b>' + esc(k.nama) + '</b><span class="meta">' + (k.sekolah ? esc(k.sekolah) + ' · ' : '') + 'Kode ' + esc(k.kode) + ' · PIN ' + esc(k.pin) + (k.aktif === 'tidak' ? ' · Nonaktif' : '') + '</span></div><div class="acts"><button class="bt" data-act="editkar" data-id="' + esc(k.kode) + '">Ubah</button><button class="bt dng" data-act="delkar" data-id="' + esc(k.kode) + '">Hapus</button></div></div>';
+      return '<div class="li"><div><b>' + esc(k.nama) + '</b><span class="meta">' + (k.sekolah ? esc(k.sekolah) + ' · ' : '') + 'Kode ' + esc(k.kode) + ' · PIN ' + esc(k.pin) + (k.peran === 'barcode' ? ' · Layar barcode' : '') + (k.aktif === 'tidak' ? ' · Nonaktif' : '') + '</span></div><div class="acts"><button class="bt" data-act="editkar" data-id="' + esc(k.kode) + '">Ubah</button><button class="bt dng" data-act="delkar" data-id="' + esc(k.kode) + '">Hapus</button></div></div>';
     }).join('') : '<p class="meta">Belum ada siswa.</p>') +
     '<div class="ph2" style="margin-top:28px"><h3>Rekap presensi</h3><div class="acts"><button class="bt" data-act="csv">Unduh CSV</button><button class="btn sm" data-act="newrp">Catatan manual</button></div></div>' +
     '<form data-form="prg" class="szr" style="margin-bottom:12px"><input type="date" name="dari" value="' + esc(p.dari) + '" aria-label="Dari tanggal"><input type="date" name="sampai" value="' + esc(p.sampai) + '" aria-label="Sampai tanggal"><button class="bt" type="submit">Tampilkan</button></form>' +
     '<p class="meta">' + (STS.map(function (s) { return s + ' ' + (cnt[s] || 0); }).join(' · ')) + '</p>' +
     (p.rekap.length ? p.rekap.map(function (r) {
-      return '<div class="li"><div><b>' + esc(r.nama) + '</b><span class="meta">' + (r.sekolah ? esc(r.sekolah) + ' · ' : '') + esc(fd(r.tanggal)) + ' · ' + jam(r.masuk) + ' – ' + jam(r.pulang) + ' · ' + esc(r.status) + (r.catatan ? ' · ' + esc(r.catatan) : '') + '</span></div><div class="acts"><button class="bt" data-act="editrp" data-id="' + esc(r.id) + '">Ubah</button><button class="bt dng" data-act="delrp" data-id="' + esc(r.id) + '">Hapus</button></div></div>';
+      return '<div class="li"><div><b>' + esc(r.nama) + '</b><span class="meta">' + (r.sekolah ? esc(r.sekolah) + ' · ' : '') + esc(fd(r.tanggal)) + ' · ' + jam(r.masuk) + ' – ' + jam(r.pulang) + ' · ' + esc(r.status) + (r.catatan ? ' · ' + esc(r.catatan) : '') + (url(r.foto) ? ' · <a href="' + esc(url(r.foto)) + '" target="_blank" rel="noopener">Foto masuk</a>' : '') + (url(r.foto_pulang) ? ' · <a href="' + esc(url(r.foto_pulang)) + '" target="_blank" rel="noopener">Foto pulang</a>' : '') + '</span></div><div class="acts"><button class="bt" data-act="editrp" data-id="' + esc(r.id) + '">Ubah</button><button class="bt dng" data-act="delrp" data-id="' + esc(r.id) + '">Hapus</button></div></div>';
     }).join('') : '<p class="meta">Tidak ada data pada rentang ini.</p>');
 }
 function presAct(a, b, id) {
   var p = A.p, noop = function () {};
   if (a === 'newkar') A.ed = {k: 'kar', v: {kode: '', nama: '', pin: '', aktif: 'ya'}};
   else if (a === 'editkar') A.ed = {k: 'kar', edit: 1, v: p.karyawan.filter(function (k) { return String(k.kode) === id; })[0]};
-  else if (a === 'newrp') { if (!p.karyawan.length) { toast('Tambahkan siswa terlebih dahulu.', 1); return true; } A.ed = {k: 'rp', v: {kode: p.karyawan[0].kode, tanggal: todayStr(), status: 'Izin', masuk: '', pulang: '', catatan: ''}}; }
+  else if (a === 'newrp') { if (!p.karyawan.length) { toast('Tambahkan siswa terlebih dahulu.', 1); return true; } A.ed = {k: 'rp', v: {kode: (p.karyawan.filter(function (k) { return k.peran !== 'barcode'; })[0] || p.karyawan[0]).kode, tanggal: todayStr(), status: 'Izin', masuk: '', pulang: '', catatan: ''}}; }
   else if (a === 'editrp') A.ed = {k: 'rp', edit: 1, v: p.rekap.filter(function (r) { return String(r.id) === id; })[0]};
   else if (a === 'delkar') { if (confirm('Hapus siswa ini? Riwayat presensinya tetap tersimpan.')) guard(adm('deleteKaryawan', {kode: id})).then(function (l) { p.karyawan = l; adminRender(); toast('Data siswa dihapus.'); }).catch(noop); return true; }
   else if (a === 'delrp') { if (confirm('Hapus catatan presensi ini?')) guard(adm('deletePresensi', {id: id, dari: p.dari, sampai: p.sampai})).then(function (d) { A.p = d; adminRender(); toast('Catatan dihapus.'); }).catch(noop); return true; }
@@ -952,7 +1041,7 @@ function presSubmit(k, v) {
 }
 function presCsv() {
   var q = function (x) { x = String(x == null ? '' : x); if (/^[=+\-@]/.test(x)) x = "'" + x; return '"' + x.replace(/"/g, '""') + '"'; };
-  var rows = [['Tanggal', 'Kode', 'Nama', 'Sekolah', 'Masuk', 'Pulang', 'Status', 'Catatan']].concat(A.p.rekap.map(function (r) { return [r.tanggal, r.kode, r.nama, r.sekolah, r.masuk, r.pulang, r.status, r.catatan]; }));
+  var rows = [['Tanggal', 'Kode', 'Nama', 'Sekolah', 'Masuk', 'Pulang', 'Status', 'Catatan', 'Foto masuk', 'Foto pulang']].concat(A.p.rekap.map(function (r) { return [r.tanggal, r.kode, r.nama, r.sekolah, r.masuk, r.pulang, r.status, r.catatan, r.foto, r.foto_pulang]; }));
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.map(function (r) { return r.map(q).join(','); }).join('\r\n')], {type: 'text/csv;charset=utf-8'}));
   a.download = 'presensi_' + A.p.dari + '_' + A.p.sampai + '.csv'; document.body.appendChild(a); a.click(); a.remove();
