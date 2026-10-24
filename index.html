@@ -149,6 +149,11 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
   .rt .fi.p-kiri:not(.z-penuh){float:left;margin:6px 20px 12px 0}
   .rt .fi.p-kanan:not(.z-penuh){float:right;margin:6px 0 12px 20px}
 }
+/* ukuran teks per kolom */
+.szr{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.fg .szr label{display:inline;margin:0;font-weight:600;font-size:13px;color:var(--mut)}
+.szr input[type=range]{flex:1;min-width:120px;accent-color:var(--p)}
+.szr input[type=number]{width:84px}
 /* toolbar editor */
 .tb{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:6px}
 .tb .bt{padding:7px 10px;min-width:38px;display:inline-flex;align-items:center;justify-content:center}
@@ -192,6 +197,15 @@ var S = {s: {}, tabs: [], latest: [], total: 0, cur: {t: 'home'}, token: null};
 try { S.token = sessionStorage.getItem('wp_tok'); } catch (e) {}
 function tok(t) { S.token = t; try { t ? sessionStorage.setItem('wp_tok', t) : sessionStorage.removeItem('wp_tok'); } catch (e) {} }
 var A = {sec: 'set', ed: null, d: null};
+var SZ = {
+  nama_usaha: [12, 36, 18, '.brand'],
+  tagline: [20, 80, 46, '.hero h1'],
+  deskripsi: [12, 28, 17, '.hero p'],
+  tombol_teks: [12, 24, 15, '.hero .btn'],
+  judul_postingan: [16, 48, 24, '.sh h2.jp'],
+  footer_kiri: [10, 24, 14, '#fl'],
+  footer_kanan: [10, 24, 14, '#fr']
+};
 var $ = function (q) { return document.querySelector(q); };
 var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); };
 var msg = function (e) { return (e && e.message) || String(e); };
@@ -269,6 +283,14 @@ function theme() {
   $('#logo').innerHTML = l ? '<img class="logo" src="' + esc(l) + '" alt="">' : '<span class="logo">' + esc((s.nama_usaha || 'N').charAt(0).toUpperCase()) + '</span>';
   $('#fl').textContent = s.footer_kiri || '';
   $('#fr').textContent = s.footer_kanan || '';
+  // ukuran teks: hanya yang diubah dari standar; dibatasi agar tetap pas di layar kecil
+  var css = Object.keys(SZ).map(function (k) {
+    var n = parseInt(s['ukuran_' + k], 10);
+    return (n >= 10 && n <= 80 && n !== SZ[k][2]) ? SZ[k][3] + '{font-size:min(' + n + 'px,calc(14px + 4vw))!important}' : '';
+  }).join('');
+  var st = document.getElementById('fsz');
+  if (!st) { st = document.createElement('style'); st.id = 'fsz'; document.head.appendChild(st); }
+  st.textContent = css;
 }
 function nav() {
   $('#nav').innerHTML = S.tabs.map(function (t) {
@@ -288,7 +310,7 @@ function home() {
   var btn = s.tombol_teks && b ? '<a class="btn" href="' + esc(b) + '" target="_blank" rel="noopener">' + esc(s.tombol_teks) + '</a>' : '';
   $('#view').innerHTML = '<div class="wrap"><section class="hero"><div><h1>' + esc(s.tagline) + '</h1>' + (s.deskripsi ? '<p>' + esc(s.deskripsi) + '</p>' : '') + btn + '</div>' +
     (h ? '<div><img src="' + esc(h) + '" alt=""></div>' : '') + '</section>' +
-    '<section class="posts"><div class="sh"><h2>' + esc(s.judul_postingan) + '</h2>' + (S.total > S.latest.length ? '<a href="#" data-all>Lihat semua</a>' : '') + '</div>' +
+    '<section class="posts"><div class="sh"><h2 class="jp">' + esc(s.judul_postingan) + '</h2>' + (S.total > S.latest.length ? '<a href="#" data-all>Lihat semua</a>' : '') + '</div>' +
     (S.latest.length ? '<div class="grid">' + S.latest.map(card).join('') + '</div>' : '<p class="meta">Belum ada postingan.</p>') + '</section></div>';
   window.scrollTo(0, 0);
 }
@@ -395,7 +417,13 @@ function fld(f, v) {
   if (t === 'textarea') h += '<textarea id="f_' + k + '" name="' + k + '" rows="' + (f[4] || 3) + '">' + esc(v) + '</textarea>';
   else if (t === 'img') h += '<div class="imgf"><input id="f_' + k + '" name="' + k + '" value="' + esc(v) + '" placeholder="https://… atau tautan Google Drive"><button type="button" class="bt" data-act="pick" data-k="' + k + '">Unggah</button><input type="file" accept="image/*" hidden data-file="' + k + '"></div>';
   else h += '<input id="f_' + k + '" name="' + k + '" type="' + t + '" value="' + esc(v) + '">';
-  return h + (f[3] ? '<small>' + f[3] + '</small>' : '') + '</div>';
+  return h + (f[3] ? '<small>' + f[3] + '</small>' : '') + szCtl(k) + '</div>';
+}
+function szCtl(k) {
+  var z = SZ[k]; if (!z) return '';
+  var n = parseInt(((A.d && A.d.settings) || {})['ukuran_' + k], 10); if (!(n >= 10 && n <= 80)) n = z[2];
+  return '<div class="szr"><label for="z_' + k + '">Ukuran teks (px)</label><input type="range" min="' + z[0] + '" max="' + z[1] + '" value="' + Math.min(z[1], Math.max(z[0], n)) + '" data-z="ukuran_' + k + '" aria-label="Geser ukuran teks">' +
+    '<input id="z_' + k + '" name="ukuran_' + k + '" type="number" min="10" max="80" value="' + n + '"><button type="button" class="bt" data-act="szreset" data-k="ukuran_' + k + '" data-d="' + z[2] + '">Standar</button></div>';
 }
 function vals(form) {
   var o = {};
@@ -549,6 +577,7 @@ $('#ac').addEventListener('click', function (e) {
   var b = e.target.closest('[data-act]'); if (!b) return;
   var a = b.dataset.act, id = b.dataset.id;
   if (a === 'pick') { $('#ac').querySelector('[data-file="' + b.dataset.k + '"]').click(); return; }
+  if (a === 'szreset') { var fm = b.closest('form'); fm.elements[b.dataset.k].value = b.dataset.d; fm.querySelector('[data-z="' + b.dataset.k + '"]').value = b.dataset.d; return; }
   if (a === 'fmt') { fmt(b.dataset.f); return; }
   if (a === 'imgpanel') { var pn = $('#ipn'); pn.hidden = !pn.hidden; if (!pn.hidden) $('#ip_url').focus(); return; }
   if (a === 'imgins') { insImg(); return; }
@@ -581,7 +610,12 @@ $('#ac').addEventListener('change', function (e) {
     .catch(function (x) { toast(msg(x), 1); });
   t.value = '';
 });
-$('#ac').addEventListener('input', function (e) { if (e.target.id === 'f_isi') prevUpd(); });
+$('#ac').addEventListener('input', function (e) {
+  var t = e.target;
+  if (t.id === 'f_isi') prevUpd();
+  if (t.dataset && t.dataset.z) t.form.elements[t.dataset.z].value = t.value;
+  else if (t.name && t.name.indexOf('ukuran_') === 0) { var r = t.form.querySelector('[data-z="' + t.name + '"]'); if (r) r.value = t.value; }
+});
 $('#ac').addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && /^ip_(url|k)$/.test(e.target.id)) { e.preventDefault(); insImg(); }
 });
