@@ -4,10 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Profil Usaha</title>
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0F4C5C">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<script>try{var m=localStorage.getItem('wp_theme');document.documentElement.dataset.theme=m||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');}catch(e){}</script>
+<script>try{var m=localStorage.getItem('wp_theme');document.documentElement.dataset.theme=m==='dark'?'dark':'light';}catch(e){}</script>
 <link rel="icon" type="image/png" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDe9GDtT8FV08iVmLcmqOn_xocE-bhY6Be78iNFq8Y_CGQtnlxXmOngnHjGqHsE4Lffgy4gKGA4MawDftRselAbk5oCNFZoXr8TRTp8vTKHIPMbveqFSgtSjlaBgclRi_qU9NJVBnw4aSpLQ08rHdyJbjfzYhnuez7mafH4RF5FwJ8XulcSiNICmhYwtLK/s320/BUDI%20KOMPUTER.png">
 <link rel="apple-touch-icon" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDe9GDtT8FV08iVmLcmqOn_xocE-bhY6Be78iNFq8Y_CGQtnlxXmOngnHjGqHsE4Lffgy4gKGA4MawDftRselAbk5oCNFZoXr8TRTp8vTKHIPMbveqFSgtSjlaBgclRi_qU9NJVBnw4aSpLQ08rHdyJbjfzYhnuez7mafH4RF5FwJ8XulcSiNICmhYwtLK/s320/BUDI%20KOMPUTER.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -215,7 +212,7 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
   <div class="hr"><button class="ib" id="btnTheme" aria-label="Ganti tema terang/gelap"><svg class="i-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="i-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg></button><button class="ib" id="btnAdmin" aria-label="Masuk admin"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></button></div>
 </div></header>
 <main id="view"></main>
-<footer><div class="wrap fin"><span id="fl"></span><span id="fr"></span><button class="bt" id="btnInstall" type="button" hidden>Pasang aplikasi</button></div></footer>
+<footer><div class="wrap fin"><span id="fl"></span><span id="fr"></span></div></footer>
 
 <div class="modal" id="modal" hidden><form class="box" id="loginForm" aria-labelledby="lt">
   <h2 id="lt">Masuk admin</h2>
@@ -240,6 +237,7 @@ var S = {s: {}, tabs: [], latest: [], total: 0, cur: {t: 'home'}, token: null};
 try { S.token = sessionStorage.getItem('wp_tok'); } catch (e) {}
 function tok(t) { S.token = t; try { t ? sessionStorage.setItem('wp_tok', t) : sessionStorage.removeItem('wp_tok'); } catch (e) {} }
 var A = {sec: 'set', ed: null, d: null};
+var HZ = {nama_usaha: [12, 28, 18, '.brand'], tagline: [14, 48, 24, '.hero h1'], judul_postingan: [14, 40, 22, '.sh h2.jp']}; // ukuran khusus HP
 var SZ = {
   nama_usaha: [12, 36, 18, '.brand'],
   tagline: [20, 80, 46, '.hero h1'],
@@ -338,6 +336,10 @@ function theme() {
     var n = parseInt(s['ukuran_' + k], 10);
     return (n >= 10 && n <= 80 && n !== SZ[k][2]) ? SZ[k][3] + '{font-size:min(' + n + 'px,calc(14px + 4vw))!important}' : '';
   }).join('');
+  css += '@media(max-width:639px){' + Object.keys(HZ).map(function (k) {
+    var n = parseInt(s['ukuran_hp_' + k], 10); if (!(n >= 10 && n <= 80)) n = HZ[k][2];
+    return HZ[k][3] + '{font-size:' + n + 'px!important}';
+  }).join('') + '}';
   var st = document.getElementById('fsz');
   if (!st) { st = document.createElement('style'); st.id = 'fsz'; document.head.appendChild(st); }
   st.textContent = css;
@@ -523,13 +525,6 @@ $('#btnTheme').addEventListener('click', function () {
   try { localStorage.setItem('wp_theme', d); } catch (e) {}
   theme(); if (S.cur.t === 'tab') route(S.cur);
 });
-var DP = null;
-window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); DP = e; $('#btnInstall').hidden = false; });
-window.addEventListener('appinstalled', function () { $('#btnInstall').hidden = true; });
-$('#btnInstall').addEventListener('click', function () {
-  if (!DP) return; DP.prompt();
-  DP.userChoice.then(function () { DP = null; $('#btnInstall').hidden = true; });
-});
 $('#view').addEventListener('click', function (e) {
   if (e.target.closest('[data-share]')) { shareNow(); return; }
   var a = e.target.closest('[data-post],[data-all],[data-back]'); if (!a) return; e.preventDefault();
@@ -605,11 +600,15 @@ function fld(f, v) {
   else h += '<input id="f_' + k + '" name="' + k + '" type="' + t + '" value="' + esc(v) + '">';
   return h + (f[3] ? '<small>' + f[3] + '</small>' : '') + szCtl(k) + '</div>';
 }
+function szRow(name, label, z, v) {
+  var n = parseInt(v, 10); if (!(n >= 10 && n <= 80)) n = z[2];
+  return '<div class="szr"><label for="z_' + name + '">' + label + '</label><input type="range" min="' + z[0] + '" max="' + z[1] + '" value="' + Math.min(z[1], Math.max(z[0], n)) + '" data-z="' + name + '" aria-label="Geser ukuran teks">' +
+    '<input id="z_' + name + '" name="' + name + '" type="number" min="10" max="80" value="' + n + '"><button type="button" class="bt" data-act="szreset" data-k="' + name + '" data-d="' + z[2] + '">Standar</button></div>';
+}
 function szCtl(k) {
   var z = SZ[k]; if (!z) return '';
-  var n = parseInt(((A.d && A.d.settings) || {})['ukuran_' + k], 10); if (!(n >= 10 && n <= 80)) n = z[2];
-  return '<div class="szr"><label for="z_' + k + '">Ukuran teks (px)</label><input type="range" min="' + z[0] + '" max="' + z[1] + '" value="' + Math.min(z[1], Math.max(z[0], n)) + '" data-z="ukuran_' + k + '" aria-label="Geser ukuran teks">' +
-    '<input id="z_' + k + '" name="ukuran_' + k + '" type="number" min="10" max="80" value="' + n + '"><button type="button" class="bt" data-act="szreset" data-k="ukuran_' + k + '" data-d="' + z[2] + '">Standar</button></div>';
+  var st = (A.d && A.d.settings) || {};
+  return szRow('ukuran_' + k, 'Ukuran teks (px)', z, st['ukuran_' + k]) + (HZ[k] ? szRow('ukuran_hp_' + k, 'Ukuran di HP (px)', HZ[k], st['ukuran_hp_' + k]) : '');
 }
 function vals(form) {
   var o = {};
@@ -860,7 +859,7 @@ function shrink(file) {
 }
 
 var DL = new URLSearchParams(location.search).get('p');
-if ('serviceWorker' in navigator && /^https:|^http:\/\/localhost/.test(location.href)) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); }).catch(function () {}); // bersihkan service worker lama
 (function boot() {
   track('visit');
   if (/GANTI_DENGAN/.test(API_URL)) {
