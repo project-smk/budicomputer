@@ -149,6 +149,14 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
   .info{margin-top:10px;padding:8px 14px}
   .posts{padding-top:14px}
 }
+/* layanan: HP = bottom sheet */
+.sheet{position:fixed;inset:0;z-index:25;background:rgba(20,38,43,.55);display:flex;align-items:flex-end}
+.sheet .sp{background:#fff;width:100%;max-height:80vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));animation:sup .22s ease-out}
+.sheet .sph{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sheet .sph h2{font-size:20px;margin:0}
+.sheet .svc{grid-template-columns:1fr;gap:8px}
+@keyframes sup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media(max-width:639px){#layanan{display:none}}
 /* teks kaya (isi postingan) */
 .rt{display:flow-root}
 .rt p,.rt ul{margin:0 0 16px;line-height:1.8}
@@ -327,7 +335,7 @@ function card(p) {
     '<div class="cb"><span class="meta">' + esc(fd(p.tanggal)) + '</span><h3>' + esc(p.judul) + '</h3><p>' + esc(p.ringkasan) + '</p><span class="more">Baca selengkapnya</span></div></a>';
 }
 function home() {
-  S.cur = {t: 'home'}; nav();
+  closeSheet(); S.cur = {t: 'home'}; nav();
   var s = S.s, h = im(s.hero_image), b = url(s.tombol_link);
   var sv = String(s.layanan || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 12).map(function (l, i) {
     var k = l.indexOf('|'), t = (k < 0 ? l : l.slice(0, k)).trim(), d = k < 0 ? '' : l.slice(k + 1).trim();
@@ -345,11 +353,32 @@ function home() {
     (s.kontak_teks ? '<section class="cta"><div><h2>' + esc(s.judul_kontak || 'Hubungi Kami') + '</h2><p>' + esc(s.kontak_teks) + '</p></div>' + btn + '</section>' : '') + '</div>';
   window.scrollTo(0, 0);
 }
+var HPQ = window.matchMedia('(max-width:639px)');
+function closeSheet() {
+  var o = document.getElementById('sheet'); if (!o) return;
+  o.remove(); document.body.style.overflow = '';
+  if (closeSheet.f && document.body.contains(closeSheet.f)) closeSheet.f.focus();
+}
+function openSheet(src, btn) {
+  closeSheet(); closeSheet.f = btn;
+  var o = document.createElement('div'); o.id = 'sheet'; o.className = 'sheet';
+  o.innerHTML = '<div class="sp" role="dialog" aria-modal="true" aria-labelledby="sht">' +
+    '<div class="sph"><h2 id="sht"></h2><button class="ib" type="button" data-close aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+    '<div class="svc"></div></div>';
+  o.querySelector('#sht').textContent = (src.querySelector('h2') || {}).textContent || 'Layanan';
+  o.querySelector('.svc').innerHTML = src.querySelector('.svc').innerHTML;
+  o.addEventListener('click', function (e) { if (e.target === o || e.target.closest('[data-close]')) closeSheet(); });
+  document.body.appendChild(o); document.body.style.overflow = 'hidden';
+  o.querySelector('[data-close]').focus();
+}
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
 document.addEventListener('click', function (e) {
   var b = e.target.closest && e.target.closest('[data-scroll]');
   if (!b) return;
   var t = document.getElementById(b.dataset.scroll);
-  if (t) t.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth'});
+  if (!t) return;
+  if (HPQ.matches && t.querySelector('.svc')) return openSheet(t, b);
+  t.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth'});
 });
 function loading() { $('#view').innerHTML = '<div class="wrap"><p class="meta pad">Memuat…</p></div>'; window.scrollTo(0, 0); }
 function fail(e) { $('#view').innerHTML = '<div class="wrap"><p class="pad">Gagal memuat: ' + esc(msg(e)) + ' <a href="#" data-back>Kembali</a></p></div>'; }
