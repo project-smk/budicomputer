@@ -50,10 +50,11 @@ main{flex:1}
 .sec{padding:24px 0 0}
 .sec h2{font-size:22px;margin:0 0 12px}
 .svc{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-.sc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.sc{background:var(--kc,var(--card));color:var(--kt,var(--ink));border:1px solid var(--kl,var(--line));border-radius:12px;padding:14px}
 .sc .n{width:28px;height:28px;border-radius:50%;background:var(--p);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center;margin-bottom:8px}
 .sc strong{display:block;font-size:16px}
-.sc p{margin:4px 0 0;font-size:13px;line-height:1.5;color:var(--mut)}
+.sc p{margin:4px 0 0;font-size:13px;line-height:1.5;color:var(--km,var(--mut))}
+.card .meta{color:var(--km,var(--mut))}
 .cta{background:var(--p);color:#fff;border-radius:16px;padding:22px 28px;display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:24px 0 24px}
 .cta>div{flex:1 1 320px}
 .cta h2{font-size:20px;margin:0 0 6px;color:#fff}
@@ -65,12 +66,12 @@ main{flex:1}
 .sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .sh h2{font-size:22px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.card{display:flex;flex-direction:row;align-items:flex-start;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;color:inherit;text-decoration:none;min-width:0}
+.card{display:flex;flex-direction:row;align-items:flex-start;gap:12px;background:var(--kc,var(--card));color:var(--kt,var(--ink));border:1px solid var(--kl,var(--line));border-radius:12px;padding:12px;color:inherit;text-decoration:none;min-width:0}
 .card:hover{border-color:var(--pt)}
-.ph{width:104px;height:104px;border-radius:8px;background:var(--line);object-fit:contain;display:block;flex:none}
+.ph{width:104px;height:104px;border-radius:8px;background:var(--kl,var(--line));object-fit:contain;display:block;flex:none}
 .cb{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .card h3{font-size:16px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.card p{margin:0;font-size:13px;color:var(--mut);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card p{margin:0;font-size:13px;color:var(--km,var(--mut));line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .more{font-weight:700;font-size:13px;color:var(--a)}
 /* artikel & tab */
 .art{max-width:760px;margin:0 auto;padding:40px 0}
@@ -316,11 +317,28 @@ function rich(t) {
 /* ============ SITUS PUBLIK ============ */
 function isDark() { return document.documentElement.dataset.theme === 'dark'; }
 function mix(h, t) { var n = parseInt(h.slice(1), 16); return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(function (c) { return ('0' + Math.round(c + (255 - c) * t).toString(16)).slice(-2); }).join(''); }
+function hexRgb(h) { var n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function rgbHex(a) { return '#' + a.map(function (c) { return ('0' + Math.max(0, Math.min(255, Math.round(c))).toString(16)).slice(-2); }).join(''); }
+function blend(a, b, t) { var x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map(function (c, i) { return c + (y[i] - c) * t; })); }
+function lum(h) { var l = hexRgb(h).map(function (c) { c /= 255; return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); }); return .2126 * l[0] + .7152 * l[1] + .0722 * l[2]; }
+/* kartu postingan & layanan: warna sesuai mode terang/gelap, bisa digelapkan; teks & garis menyesuaikan otomatis */
+function cardTheme(s, dk) {
+  var r = document.documentElement.style, ok = /^#[0-9a-f]{6}$/i;
+  var c = dk ? (ok.test(s.warna_kartu_gelap) ? s.warna_kartu_gelap : '#162327') : (ok.test(s.warna_kartu) ? s.warna_kartu : '#FFFFFF');
+  var g = Math.min(60, Math.max(0, parseInt(s.gelap_kartu, 10) || 0));
+  if (g) c = blend(c, '#000000', g / 100);
+  var terang = lum(c) > .4;
+  r.setProperty('--kc', c);
+  r.setProperty('--kt', terang ? '#14262B' : '#E6EEF0');
+  r.setProperty('--km', terang ? '#4A5F66' : '#A3B8BE');
+  r.setProperty('--kl', blend(c, terang ? '#000000' : '#FFFFFF', .14));
+}
 function todayStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
 function theme() {
   var s = S.s, r = document.documentElement.style, ok = /^#[0-9a-f]{6}$/i;
   var pu = ok.test(s.warna_utama) ? s.warna_utama : '#0F4C5C', ak = ok.test(s.warna_aksen) ? s.warna_aksen : '#B45309', dk = isDark();
   r.setProperty('--p', pu); r.setProperty('--a', dk ? mix(ak, .5) : ak); r.setProperty('--pt', dk ? mix(pu, .55) : pu);
+  cardTheme(s, dk);
   var wa = String(s.nomor_wa || '').replace(/\D/g, ''); if (wa.charAt(0) === '0') wa = '62' + wa.slice(1);
   var w = $('#wa');
   if (!w) { w = document.createElement('a'); w.id = 'wa'; w.target = '_blank'; w.rel = 'noopener'; w.setAttribute('aria-label', 'Chat via WhatsApp'); w.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.7 7L3 21l2-6.1A8 8 0 1 1 21 12z"/></svg><span>Chat WhatsApp</span>'; document.body.appendChild(w); }
@@ -584,6 +602,9 @@ var FIELDS = [
   ['footer_kanan', 'Footer kanan (kontak)', 'text'],
   ['warna_utama', 'Warna utama', 'color'],
   ['warna_aksen', 'Warna tautan', 'color'],
+  ['warna_kartu', 'Warna kartu – mode terang', 'color', 'Berlaku untuk kartu postingan dan kartu layanan di beranda.'],
+  ['warna_kartu_gelap', 'Warna kartu – mode gelap', 'color', 'Dipakai otomatis saat pengunjung memakai mode gelap. Warna teks kartu menyesuaikan sendiri agar tetap terbaca.'],
+  ['gelap_kartu', 'Kegelapan kartu (%)', 'dark', '0 = sesuai warna yang dipilih. Makin besar, kartu makin gelap (berlaku di kedua mode).'],
   ['folder_gambar', 'Nama folder Google Drive untuk gambar', 'text', 'Gambar yang diunggah disimpan di folder ini (dibuat otomatis jika belum ada). Jika diganti, unggahan berikutnya masuk ke folder baru; gambar lama tetap di folder lama dan tetap tampil.']
 ];
 var TYP = {
@@ -596,6 +617,7 @@ var TYP = {
 function fld(f, v) {
   var k = f[0], t = f[2], h = '<div class="fg"><label for="f_' + k + '">' + f[1] + '</label>';
   if (t === 'textarea') h += '<textarea id="f_' + k + '" name="' + k + '" rows="' + (f[4] || 3) + '">' + esc(v) + '</textarea>';
+  else if (t === 'dark') { var dv = Math.min(60, Math.max(0, parseInt(v, 10) || 0)); h += '<div class="szr"><input type="range" min="0" max="60" value="' + dv + '" data-z="' + k + '" aria-label="Geser kegelapan kartu"><input id="f_' + k + '" name="' + k + '" type="number" min="0" max="60" value="' + dv + '"><button type="button" class="bt" data-act="szreset" data-k="' + k + '" data-d="0">Standar</button></div>'; }
   else if (t === 'img') h += '<div class="imgf"><input id="f_' + k + '" name="' + k + '" value="' + esc(v) + '" placeholder="https://… atau tautan Google Drive"><button type="button" class="bt" data-act="pick" data-k="' + k + '">Unggah</button><input type="file" accept="image/*" hidden data-file="' + k + '"></div>';
   else h += '<input id="f_' + k + '" name="' + k + '" type="' + t + '" value="' + esc(v) + '">';
   return h + (f[3] ? '<small>' + f[3] + '</small>' : '') + szCtl(k) + '</div>';
@@ -810,7 +832,7 @@ $('#ac').addEventListener('input', function (e) {
   var t = e.target;
   if (t.id === 'f_isi') prevUpd();
   if (t.dataset && t.dataset.z) t.form.elements[t.dataset.z].value = t.value;
-  else if (t.name && t.name.indexOf('ukuran_') === 0) { var r = t.form.querySelector('[data-z="' + t.name + '"]'); if (r) r.value = t.value; }
+  else if (t.name && /^(ukuran_|gelap_)/.test(t.name)) { var r = t.form.querySelector('[data-z="' + t.name + '"]'); if (r) r.value = t.value; }
 });
 $('#ac').addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && /^ip_(url|k)$/.test(e.target.id)) { e.preventDefault(); insImg(); }
