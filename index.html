@@ -548,7 +548,7 @@ function guard(p) {
 function adminRender() {
   var nav_ = [['set', 'Identitas & tampilan'], ['post', 'Postingan'], ['tab', 'Menu tab'], ['acc', 'Akun']];
   $('#side').innerHTML = nav_.map(function (x) { return '<button data-sec="' + x[0] + '"' + (A.sec === x[0] ? ' aria-current="true"' : '') + '>' + x[1] + '</button>'; }).join('');
-  var h = A.d.mustChange ? '<div class="warn"><b>Ganti password sekarang.</b> Akun masih memakai password awal. Buka menu Akun.</div>' : '';
+  var h = A.d.mustChange ? '<div class="warn"><b>Ganti password sekarang.</b> Akun masih memakai password awal. Buka menu Akun (username juga bisa diganti).</div>' : '';
   $('#ac').innerHTML = '<div class="pane">' + h + ({set: secSet, post: secPost, tab: secTab, acc: secAcc}[A.sec])() + '</div>';
 }
 function secSet() {
@@ -666,12 +666,13 @@ function secTab() {
     }).join('');
 }
 function secAcc() {
-  return '<div class="ph2"><h2>Akun</h2></div><p class="meta">Masuk sebagai <b>' + esc(A.d.username) + '</b></p><form data-form="acc">' +
-    '<div class="fg"><label for="o">Password lama</label><input id="o" name="o" type="password" autocomplete="current-password" required></div>' +
-    '<div class="fg"><label for="n1">Password baru</label><input id="n1" name="n1" type="password" autocomplete="new-password" minlength="8" required><small>Minimal 8 karakter.</small></div>' +
-    '<div class="fg"><label for="n2">Ulangi password baru</label><input id="n2" name="n2" type="password" autocomplete="new-password" required></div>' +
+  return '<div class="ph2"><h2>Akun</h2></div><p class="meta">Masuk sebagai <b>' + esc(A.d.username) + '</b></p><form data-form="acc" autocomplete="off">' +
+    '<div class="fg"><label for="u">Username</label><input id="u" name="u" type="text" value="' + esc(A.d.username) + '" maxlength="30" autocomplete="username" autocapitalize="off" spellcheck="false" required><small>3–30 karakter: huruf, angka, titik, garis bawah, atau strip. Tanpa spasi.</small></div>' +
+    '<div class="fg"><label for="n1">Password baru</label><input id="n1" name="n1" type="password" autocomplete="new-password" minlength="8"><small>Kosongkan jika password tidak ingin diganti. Minimal 8 karakter.</small></div>' +
+    '<div class="fg"><label for="n2">Ulangi password baru</label><input id="n2" name="n2" type="password" autocomplete="new-password"></div>' +
+    '<div class="fg"><label for="o">Password saat ini</label><input id="o" name="o" type="password" autocomplete="current-password" required><small>Wajib diisi untuk menyimpan perubahan apa pun.</small></div>' +
     '<div class="fg"><label class="meta" style="display:flex;gap:6px;align-items:center;margin-top:6px"><input type="checkbox" class="sp"> Tampilkan password</label></div>' +
-    '<button class="btn" type="submit">Ganti password</button></form>';
+    '<button class="btn" type="submit">Simpan akun</button></form>';
 }
 function byId(list, id) { return list.filter(function (x) { return String(x.id) === String(id); })[0]; }
 
@@ -735,8 +736,13 @@ $('#ac').addEventListener('submit', function (e) {
     if (v.tipe === 'link' || v.tipe === 'embed') v.isi = url(v.isi) || v.isi;
     p = adm('saveTab', {tab: v}).then(function (l) { A.d.tabs = l; A.ed = null; toast('Tab disimpan.'); });
   } else if (k === 'acc') {
+    var nu = String(v.u || '').trim();
     if (v.n1 !== v.n2) { toast('Ulangi password baru dengan sama persis.', 1); btn.disabled = false; return; }
-    p = adm('changePassword', {oldPass: v.o, newPass: v.n1}).then(function () { A.d.mustChange = false; f.reset(); toast('Password diganti.'); });
+    if (v.n1 && v.n1.length < 8) { toast('Password baru minimal 8 karakter.', 1); btn.disabled = false; return; }
+    if (nu === A.d.username && !v.n1) { toast('Belum ada yang diubah.', 1); btn.disabled = false; return; }
+    p = adm('saveAccount', {oldPass: v.o, newUser: nu, newPass: v.n1}).then(function (r) {
+      A.d.username = r.username; A.d.mustChange = !!r.mustChange; toast('Akun disimpan.');
+    });
   }
   guard(p).then(adminRender, function () {}).then(function () { btn.disabled = false; });
 });
