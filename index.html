@@ -55,7 +55,7 @@ main{flex:1}
 /* artikel & tab */
 .art{max-width:760px;margin:0 auto;padding:40px 0}
 .art h1{font-size:34px;line-height:1.2;margin:8px 0 20px}
-.art img{width:100%;max-height:420px;object-fit:cover;border-radius:14px;margin-bottom:20px}
+.art img.cover{width:100%;max-height:420px;object-fit:cover;border-radius:14px;margin-bottom:20px}
 .art p{line-height:1.8;margin:0 0 16px}
 .frame{width:100%;height:75vh;min-height:420px;border:1px solid var(--line);border-radius:12px;background:#fff;display:block}
 .pad{padding:32px 0}
@@ -127,6 +127,36 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
   .side button{white-space:nowrap}
   #ac{padding:16px}
 }
+/* teks kaya (isi postingan) */
+.rt{display:flow-root}
+.rt p,.rt ul{margin:0 0 16px;line-height:1.8}
+.rt ul{padding-left:24px}
+.rt h2{font-size:24px;line-height:1.3;margin:28px 0 12px}
+.rt .a-tengah{text-align:center}
+.rt .a-kanan{text-align:right}
+.rt .a-rata{text-align:justify}
+.rt ul.a-tengah,.rt ul.a-kanan{list-style-position:inside;padding-left:0}
+.rt figure.fi{margin:8px 0 20px;padding:0}
+.rt figure.fi img{display:block;width:100%;height:auto;max-height:none;object-fit:initial;border-radius:10px;margin:0;background:var(--line)}
+.rt .fi figcaption{font-size:13px;color:var(--mut);margin-top:6px;text-align:center;line-height:1.5}
+.rt .fi.z-kecil{width:min(220px,100%)}
+.rt .fi.z-sedang{width:min(400px,100%)}
+.rt .fi.z-besar{width:min(600px,100%)}
+.rt .fi.z-penuh{width:100%}
+.rt .fi.p-tengah{margin-left:auto;margin-right:auto}
+.rt .fi.p-kanan{margin-left:auto}
+@media(min-width:640px){
+  .rt .fi.p-kiri:not(.z-penuh){float:left;margin:6px 20px 12px 0}
+  .rt .fi.p-kanan:not(.z-penuh){float:right;margin:6px 0 12px 20px}
+}
+/* toolbar editor */
+.tb{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:6px}
+.tb .bt{padding:7px 10px;min-width:38px;display:inline-flex;align-items:center;justify-content:center}
+.tb .sep{width:1px;align-self:stretch;background:var(--line);margin:0 4px}
+.ipn{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:8px}
+.ipn .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.prev{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;max-height:460px;overflow:auto}
+@media(max-width:639px){.ipn .row{grid-template-columns:1fr;gap:0}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -203,8 +233,29 @@ function fd(d) {
   var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); if (!m) return d || '';
   return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
 }
-function paras(t) {
-  return String(t || '').split(/\n{2,}/).map(function (x) { return '<p>' + esc(x).replace(/\n/g, '<br>') + '</p>'; }).join('');
+function inl(t) {
+  return esc(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/__(.+?)__/g, '<u>$1</u>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/\n/g, '<br>');
+}
+/* Isi postingan -> HTML aman. Semua teks di-escape dulu; hanya penanda di bawah yang diubah menjadi tag.
+   {tengah} {kanan} {rata} di awal paragraf = perataan | ## = judul | "- " = daftar
+   **tebal** *miring* __garis bawah__ | [[gambar: link | ukuran | posisi | keterangan]] */
+function rich(t) {
+  return String(t || '').split(/\n{2,}/).map(function (b) {
+    b = b.replace(/^\s+|\s+$/g, ''); if (!b) return '';
+    var g = /^\[\[gambar:([^\]]*)\]\]$/.exec(b);
+    if (g) {
+      var q = g[1].split('|').map(function (x) { return x.trim(); }), u = im(q[0]); if (!u) return '';
+      var z = /^(kecil|sedang|besar|penuh)$/.test(q[1]) ? q[1] : 'sedang', ps = /^(kiri|tengah|kanan)$/.test(q[2]) ? q[2] : 'tengah', c = q.slice(3).join(' ').trim();
+      return '<figure class="fi z-' + z + ' p-' + ps + '"><img src="' + esc(u) + '" alt="' + esc(c) + '" loading="lazy">' + (c ? '<figcaption>' + esc(c) + '</figcaption>' : '') + '</figure>';
+    }
+    var al = '', m = /^\{(kiri|tengah|kanan|rata)\}\s*/.exec(b);
+    if (m) { al = m[1]; b = b.slice(m[0].length); }
+    var cls = al && al !== 'kiri' ? ' class="a-' + al + '"' : '';
+    if (/^## /.test(b)) return '<h2' + cls + '>' + inl(b.slice(3)) + '</h2>';
+    var ls = b.split('\n');
+    if (ls.every(function (l) { return /^- /.test(l); })) return '<ul' + cls + '>' + ls.map(function (l) { return '<li>' + inl(l.slice(2)) + '</li>'; }).join('') + '</ul>';
+    return '<p' + cls + '>' + inl(b) + '</p>';
+  }).join('');
 }
 
 /* ============ SITUS PUBLIK ============ */
@@ -248,7 +299,7 @@ function postView(id) {
   api('post', {id: id}, 1).then(function (p) {
     var i = im(p.gambar);
     $('#view').innerHTML = '<div class="wrap"><article class="art"><a href="#" data-back>&larr; Kembali</a><div class="meta" style="margin-top:20px">' + esc(fd(p.tanggal)) + '</div><h1>' + esc(p.judul) + '</h1>' +
-      (i ? '<img src="' + esc(i) + '" alt="">' : '') + paras(p.isi) + '</article></div>';
+      (i ? '<img class="cover" src="' + esc(i) + '" alt="">' : '') + '<div class="rt">' + rich(p.isi) + '</div></article></div>';
   }).catch(fail);
 }
 function allView() {
@@ -362,12 +413,76 @@ function secSet() {
   var s = A.d.settings;
   return '<div class="ph2"><h2>Identitas & tampilan</h2></div><form data-form="set">' + FIELDS.map(function (f) { return fld(f, s[f[0]]); }).join('') + '<button class="btn" type="submit">Simpan perubahan</button></form>';
 }
+function aIco(t) {
+  var L = {kiri: [[4, 20], [4, 14], [4, 20], [4, 12]], tengah: [[4, 20], [7, 17], [4, 20], [8, 16]], kanan: [[4, 20], [10, 20], [4, 20], [12, 20]], rata: [[4, 20], [4, 20], [4, 20], [4, 20]]}[t];
+  return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">' + L.map(function (r, i) { return '<path d="M' + r[0] + ' ' + (5 + i * 5) + 'H' + r[1] + '"/>'; }).join('') + '</svg>';
+}
+function tbtn(f, label, title) { return '<button type="button" class="bt" data-act="fmt" data-f="' + f + '" title="' + title + '" aria-label="' + title + '">' + label + '</button>'; }
+function richField(v) {
+  return '<div class="fg"><label for="f_isi">Isi postingan</label>' +
+    '<div class="tb" role="toolbar" aria-label="Format teks">' +
+      tbtn('b', '<b>B</b>', 'Tebal') + tbtn('i', '<i>I</i>', 'Miring') + tbtn('u', '<u>U</u>', 'Garis bawah') + '<span class="sep"></span>' +
+      tbtn('kiri', aIco('kiri'), 'Rata kiri') + tbtn('tengah', aIco('tengah'), 'Rata tengah') + tbtn('kanan', aIco('kanan'), 'Rata kanan') + tbtn('rata', aIco('rata'), 'Rata kiri-kanan (justify)') + '<span class="sep"></span>' +
+      tbtn('h', 'Judul', 'Jadikan sub-judul') + tbtn('ul', 'Daftar', 'Daftar poin') + '<span class="sep"></span>' +
+      '<button type="button" class="bt" data-act="imgpanel">Sisipkan gambar</button></div>' +
+    '<div class="ipn" id="ipn" hidden>' +
+      '<div class="fg"><label for="ip_url">Gambar</label><div class="imgf"><input id="ip_url" placeholder="https://… atau tautan Google Drive"><button type="button" class="bt" data-act="pick" data-k="ip_url">Unggah</button><input type="file" accept="image/*" hidden data-file="ip_url"></div></div>' +
+      '<div class="row"><div class="fg"><label for="ip_z">Ukuran</label><select id="ip_z"><option value="kecil">Kecil</option><option value="sedang" selected>Sedang</option><option value="besar">Besar</option><option value="penuh">Penuh (selebar halaman)</option></select></div>' +
+      '<div class="fg"><label for="ip_p">Posisi</label><select id="ip_p"><option value="tengah" selected>Tengah</option><option value="kiri">Kiri (teks mengalir di kanan)</option><option value="kanan">Kanan (teks mengalir di kiri)</option></select></div></div>' +
+      '<div class="fg"><label for="ip_k">Keterangan gambar (opsional)</label><input id="ip_k" placeholder="Contoh: Sesi diskusi bersama peserta pelatihan"></div>' +
+      '<div class="acts"><button type="button" class="btn sm" data-act="imgins">Sisipkan ke teks</button><button type="button" class="bt" data-act="imgpanel">Tutup</button></div></div>' +
+    '<textarea id="f_isi" name="isi" rows="14">' + esc(v) + '</textarea>' +
+    '<small>Letakkan kursor atau blok teks, lalu klik tombol format. Pisahkan paragraf dengan satu baris kosong. Gambar disisipkan di posisi kursor.</small>' +
+    '<div class="meta" style="margin:14px 0 6px">Pratinjau</div><div class="rt prev" id="prev">' + rich(v) + '</div></div>';
+}
+function prevUpd() { clearTimeout(prevUpd.t); prevUpd.t = setTimeout(function () { var p = $('#prev'), t = $('#f_isi'); if (p && t) p.innerHTML = rich(t.value); }, 200); }
+function blk(p, f) {
+  var m = /^\{(kiri|tengah|kanan|rata)\}/.exec(p), al = m ? m[1] : '', r = (m ? p.slice(m[0].length) : p).replace(/^\s+/, '');
+  if (f === 'h') r = /^## /.test(r) ? r.slice(3) : '## ' + r.replace(/^- /gm, '');
+  else if (f === 'ul') {
+    var ls = r.replace(/^## /, '').split('\n'), all = ls.every(function (l) { return /^- /.test(l); });
+    r = ls.map(function (l) { return all ? l.slice(2) : (/^- /.test(l) ? l : '- ' + l); }).join('\n');
+  } else al = f === 'kiri' ? '' : f;
+  return (al ? '{' + al + '}' : '') + r;
+}
+function fmt(f) {
+  var ta = $('#f_isi'); if (!ta) return;
+  var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd, W = {b: '**', i: '*', u: '__'};
+  if (W[f]) {
+    var m = W[f], sel = v.slice(s, e) || 'teks';
+    ta.value = v.slice(0, s) + m + sel + m + v.slice(e);
+    ta.focus(); ta.setSelectionRange(s + m.length, s + m.length + sel.length);
+  } else {
+    var pos = 0, np = 0, ns = null, ne = 0, out = [];
+    v.split(/(\n{2,})/).forEach(function (p, k) {
+      var bs = pos, be = pos + p.length; pos = be;
+      if (k % 2 === 0 && bs <= e && be >= s && !/^\s*\[\[gambar:/.test(p)) {
+        p = blk(p, f); if (ns === null) ns = np; ne = np + p.length;
+      }
+      out.push(p); np += p.length;
+    });
+    if (ns === null) { toast('Pilih paragraf teks (bukan gambar) terlebih dahulu.', 1); return; }
+    ta.value = out.join(''); ta.focus(); ta.setSelectionRange(ns, ne);
+  }
+  prevUpd();
+}
+function insImg() {
+  var ta = $('#f_isi'), u = url($('#ip_url').value);
+  if (!u) { toast('Isi link gambar atau unggah gambar terlebih dahulu.', 1); return; }
+  var tk = '[[gambar: ' + u.replace(/[|\]\s]/g, '') + ' | ' + $('#ip_z').value + ' | ' + $('#ip_p').value + ' | ' + $('#ip_k').value.replace(/[|\[\]\n]/g, ' ').trim() + ']]';
+  var at = ta.selectionEnd, b = ta.value.slice(0, at), a = ta.value.slice(at);
+  var sb = !b ? '' : /\n\n$/.test(b) ? '' : /\n$/.test(b) ? '\n' : '\n\n', sa = !a ? '\n\n' : /^\n\n/.test(a) ? '' : /^\n/.test(a) ? '\n' : '\n\n';
+  ta.value = b + sb + tk + sa + a;
+  var c = (b + sb + tk + sa).length; ta.focus(); ta.setSelectionRange(c, c);
+  ['ip_url', 'ip_k'].forEach(function (i) { $('#' + i).value = ''; });
+  $('#ipn').hidden = true; prevUpd(); toast('Gambar disisipkan. Klik Simpan postingan untuk menerapkan.');
+}
 function secPost() {
   var e = A.ed && A.ed.k === 'post' ? A.ed.v : null;
   if (A.ed && A.ed.k === 'post') {
     return '<div class="ph2"><h2>' + (e.id ? 'Ubah postingan' : 'Postingan baru') + '</h2></div><form data-form="post"><input type="hidden" name="id" value="' + esc(e.id) + '">' +
       fld(['judul', 'Judul', 'text'], e.judul) + fld(['ringkasan', 'Ringkasan (tampil di kartu)', 'textarea', 'Maksimal sekitar 2 kalimat.', 2], e.ringkasan) +
-      fld(['isi', 'Isi postingan', 'textarea', 'Pisahkan paragraf dengan satu baris kosong.', 12], e.isi) + fld(['gambar', 'Gambar', 'img'], e.gambar) +
+      richField(e.isi) + fld(['gambar', 'Gambar sampul (tampil di kartu & bagian atas postingan)', 'img'], e.gambar) +
       fld(['tanggal', 'Tanggal', 'date'], e.tanggal) +
       '<div class="fg"><label for="f_status">Status</label><select id="f_status" name="status"><option value="terbit"' + (e.status !== 'draf' ? ' selected' : '') + '>Terbit</option><option value="draf"' + (e.status === 'draf' ? ' selected' : '') + '>Draf (disembunyikan)</option></select></div>' +
       '<div class="acts"><button class="btn" type="submit">Simpan postingan</button><button class="bt" type="button" data-act="cancel">Batal</button></div></form>';
@@ -412,6 +527,9 @@ $('#ac').addEventListener('click', function (e) {
   var b = e.target.closest('[data-act]'); if (!b) return;
   var a = b.dataset.act, id = b.dataset.id;
   if (a === 'pick') { $('#ac').querySelector('[data-file="' + b.dataset.k + '"]').click(); return; }
+  if (a === 'fmt') { fmt(b.dataset.f); return; }
+  if (a === 'imgpanel') { var pn = $('#ipn'); pn.hidden = !pn.hidden; if (!pn.hidden) $('#ip_url').focus(); return; }
+  if (a === 'imgins') { insImg(); return; }
   if (a === 'cancel') { A.ed = null; adminRender(); return; }
   if (a === 'newpost') { A.ed = {k: 'post', v: {id: '', judul: '', ringkasan: '', isi: '', gambar: '', tanggal: (function (d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })(new Date()), status: 'terbit'}}; adminRender(); return; }
   if (a === 'editpost') { A.ed = {k: 'post', v: byId(A.d.posts, id)}; adminRender(); return; }
@@ -437,9 +555,13 @@ $('#ac').addEventListener('change', function (e) {
   var file = t.files[0], form = t.form;
   toast('Mengunggah gambar…');
   shrink(file).then(function (d) { return adm('uploadImage', {dataUrl: d, name: file.name}); })
-    .then(function (u) { form.elements[f].value = u; toast('Gambar terunggah. Klik Simpan untuk menerapkan.'); })
+    .then(function (u) { form.elements[f].value = u; toast(f === 'ip_url' ? 'Gambar terunggah. Atur ukuran & posisi, lalu klik Sisipkan ke teks.' : 'Gambar terunggah. Klik Simpan untuk menerapkan.'); })
     .catch(function (x) { toast(msg(x), 1); });
   t.value = '';
+});
+$('#ac').addEventListener('input', function (e) { if (e.target.id === 'f_isi') prevUpd(); });
+$('#ac').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && /^ip_(url|k)$/.test(e.target.id)) { e.preventDefault(); insImg(); }
 });
 $('#ac').addEventListener('submit', function (e) {
   e.preventDefault();
