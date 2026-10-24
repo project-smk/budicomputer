@@ -380,21 +380,53 @@ document.addEventListener('click', function (e) {
   if (HPQ.matches && t.querySelector('.svc')) return openSheet(t, b);
   t.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth'});
 });
+/* cache di perangkat: tampil langsung dari cache, lalu diperbarui diam-diam dari server */
+var MC = {};
+function cget(k) { try { return JSON.parse(localStorage.getItem('wp_c_' + k)); } catch (e) { return null; } }
+function cput(k, d) {
+  MC[k] = d;
+  try { localStorage.setItem('wp_c_' + k, JSON.stringify(d)); }
+  catch (e) { try { Object.keys(localStorage).forEach(function (x) { if (x.indexOf('wp_c_') === 0) localStorage.removeItem(x); }); } catch (e2) {} }
+}
+function swr(action, params, key, ok, bad) {
+  var c = MC[key] || cget(key), shown = false;
+  if (c) { MC[key] = c; shown = true; ok(c); }
+  api(action, params, 1).then(function (d) {
+    var same = shown && JSON.stringify(d) === JSON.stringify(c);
+    cput(key, d);
+    if (!same) ok(d);
+  }).catch(function (e) { if (!shown) bad(e); });
+}
+/* muat diam-diam postingan & tab teks agar saat diklik sudah siap */
+function prefetch() {
+  if (S.pf || (navigator.connection && navigator.connection.saveData)) return;
+  S.pf = 1;
+  var q = [['posts', {}, 'posts']];
+  S.latest.forEach(function (p) { q.push(['post', {id: p.id}, 'post_' + p.id]); });
+  S.tabs.forEach(function (t) { if (t.tipe === 'teks' || t.tipe === 'html') q.push(['tab', {id: t.id}, 'tab_' + t.id]); });
+  (function next() {
+    var x = q.shift(); if (!x) return;
+    api(x[0], x[1], 1).then(function (d) { cput(x[2], d); }).catch(function () {}).then(function () { setTimeout(next, 300); });
+  })();
+}
 function loading() { $('#view').innerHTML = '<div class="wrap"><p class="meta pad">Memuat…</p></div>'; window.scrollTo(0, 0); }
 function fail(e) { $('#view').innerHTML = '<div class="wrap"><p class="pad">Gagal memuat: ' + esc(msg(e)) + ' <a href="#" data-back>Kembali</a></p></div>'; }
 function postView(id) {
-  S.cur = {t: 'post'}; nav(); loading();
-  api('post', {id: id}, 1).then(function (p) {
-    var i = im(p.gambar);
+  S.cur = {t: 'post', id: id}; nav(); loading();
+  swr('post', {id: id}, 'post_' + id, function (p) {
+    if (S.cur.t !== 'post' || S.cur.id !== id) return;
+    var i = im(p.gambar), y = window.scrollY;
     $('#view').innerHTML = '<div class="wrap"><article class="art"><a href="#" data-back>&larr; Kembali</a><div class="meta" style="margin-top:20px">' + esc(fd(p.tanggal)) + '</div><h1>' + esc(p.judul) + '</h1>' +
       (i ? '<img class="cover" src="' + esc(i) + '" alt="">' : '') + '<div class="rt">' + rich(p.isi) + '</div></article></div>';
-  }).catch(fail);
+    window.scrollTo(0, y);
+  }, fail);
 }
 function allView() {
   S.cur = {t: 'all'}; nav(); loading();
-  api('posts', {}, 1).then(function (list) {
+  swr('posts', {}, 'posts', function (list) {
+    if (S.cur.t !== 'all') return;
     $('#view').innerHTML = '<div class="wrap"><section class="posts"><div class="sh"><h2>Semua Postingan</h2><a href="#" data-back>Kembali</a></div><div class="grid">' + list.map(card).join('') + '</div></section></div>';
-  }).catch(fail);
+  }, fail);
 }
 function tabView(t) {
   if (t.tipe === 'beranda') return home();
@@ -402,18 +434,18 @@ function tabView(t) {
   if (t.tipe === 'teks') {
     $('#view').innerHTML = '<div class="wrap"><article class="art"><h1>' + esc(t.nama) + '</h1><div class="rt meta">Memuat…</div></article></div>';
     window.scrollTo(0, 0);
-    api('tab', {id: t.id}, 1).then(function (d) {
-      if (S.cur.id === t.id) $('#view .rt').outerHTML = '<div class="rt">' + rich(d.isi) + '</div>';
-    }).catch(function (e) { $('#view .rt').textContent = msg(e); });
+    swr('tab', {id: t.id}, 'tab_' + t.id, function (d) {
+      var r = S.cur.id === t.id && $('#view .rt'); if (r) r.outerHTML = '<div class="rt">' + rich(d.isi) + '</div>';
+    }, function (e) { var r = S.cur.id === t.id && $('#view .rt'); if (r) r.textContent = msg(e); });
     return;
   }
   $('#view').innerHTML = '<div class="wrap pad"><iframe class="frame" title="' + esc(t.nama) + '" sandbox="allow-scripts allow-forms allow-popups" referrerpolicy="no-referrer"></iframe></div>';
   window.scrollTo(0, 0);
   var f = $('#view iframe');
   if (t.tipe === 'embed') { f.src = url(t.isi); return; }
-  api('tab', {id: t.id}, 1).then(function (d) {
-    f.srcdoc = '<style>body{font:16px/1.7 system-ui,sans-serif;color:#14262B;margin:0;padding:24px;max-width:820px}img{max-width:100%}</style>' + d.isi;
-  }).catch(function (e) { f.srcdoc = '<p style="font-family:sans-serif">' + esc(msg(e)) + '</p>'; });
+  swr('tab', {id: t.id}, 'tab_' + t.id, function (d) {
+    if (S.cur.id === t.id) f.srcdoc = '<style>body{font:16px/1.7 system-ui,sans-serif;color:#14262B;margin:0;padding:24px;max-width:820px}img{max-width:100%}</style>' + d.isi;
+  }, function (e) { f.srcdoc = '<p style="font-family:sans-serif">' + esc(msg(e)) + '</p>'; });
 }
 $('#brand').addEventListener('click', function (e) { e.preventDefault(); home(); });
 $('#nav').addEventListener('click', function (e) {
@@ -427,6 +459,7 @@ $('#view').addEventListener('click', function (e) {
 function applyPublic(d, rerender) {
   S.s = d.settings; S.tabs = d.tabs; S.latest = d.latest; S.total = d.total;
   theme(); nav(); if (rerender) home();
+  setTimeout(prefetch, 800);
 }
 function refreshPublic() {
   return api('public', {}, 1).then(function (d) {
