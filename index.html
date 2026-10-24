@@ -195,19 +195,12 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
 .ipn .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .prev{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;max-height:460px;overflow:auto}
 @media(max-width:639px){.ipn .row{grid-template-columns:1fr;gap:0}}
-@media(max-width:639px){
-  #wa{padding:0;width:46px;height:46px;justify-content:center;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));opacity:.92}
-  #wa span{display:none}
-  footer{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
-}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 /* mode gelap */
 :root[data-theme=dark]{--bg:#0E1A1D;--ink:#E6EEF0;--mut:#A3B8BE;--line:#27393E;--fld:#587077;--card:#162327;color-scheme:dark}
 [data-theme=dark] .kick{background:#1E3A41}
 :root[data-theme=dark] .i-moon,:root:not([data-theme=dark]) .i-sun{display:none}
 .hr{grid-area:l;display:flex;gap:8px}.hr .ib{grid-area:auto}
-/* WhatsApp melayang */
-#wa{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;gap:8px;align-items:center;background:#128C4A;color:#fff;padding:12px 16px;border-radius:999px;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.3)}
 .shr{margin-top:28px;padding-top:16px;border-top:1px solid var(--line)}
 .bar2{display:flex;align-items:center;gap:12px}.bar2 .bg{flex:1;height:10px;border-radius:6px;background:var(--line)}.bar2 .bg i{display:block;height:100%;border-radius:6px;background:var(--pt)}.bar2 span:first-child{width:110px;font-size:13px}.bar2 b{min-width:32px;text-align:right}
 </style>
@@ -345,10 +338,6 @@ function theme() {
   var pu = ok.test(s.warna_utama) ? s.warna_utama : '#0F4C5C', ak = ok.test(s.warna_aksen) ? s.warna_aksen : '#B45309', dk = isDark();
   r.setProperty('--p', pu); r.setProperty('--a', dk ? mix(ak, .5) : ak); r.setProperty('--pt', dk ? mix(pu, .55) : pu);
   cardTheme(s, dk);
-  var wa = String(s.nomor_wa || '').replace(/\D/g, ''); if (wa.charAt(0) === '0') wa = '62' + wa.slice(1);
-  var w = $('#wa');
-  if (!w) { w = document.createElement('a'); w.id = 'wa'; w.target = '_blank'; w.rel = 'noopener'; w.setAttribute('aria-label', 'Chat via WhatsApp'); w.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.7 7L3 21l2-6.1A8 8 0 1 1 21 12z"/></svg><span>Chat WhatsApp</span>'; document.body.appendChild(w); }
-  w.hidden = !wa; if (wa) w.href = 'https://wa.me/' + wa + (s.pesan_wa ? '?text=' + encodeURIComponent(s.pesan_wa) : '');
   document.title = s.judul_halaman || s.nama_usaha || 'Profil Usaha';
   $('#brandName').textContent = s.nama_usaha || '';
   var l = im(s.logo_url);
@@ -366,9 +355,6 @@ function theme() {
   }).join('') + '}';
   var lz = function (k, d) { var n = parseInt(s[k], 10); return (n >= 16 && n <= 80) ? n : d; };
   css += '.logo{width:' + lz('ukuran_logo', 32) + 'px;height:' + lz('ukuran_logo', 32) + 'px}@media(max-width:639px){.logo{width:' + lz('ukuran_hp_logo', 32) + 'px;height:' + lz('ukuran_hp_logo', 32) + 'px}}';
-  var bt = Math.min(6, Math.max(0, parseInt(s.logo_border_tebal, 10) || 0)), bs = Math.min(50, Math.max(0, parseInt(s.logo_border_sudut, 10) || 0));
-  var bw = ok.test(s.logo_border_warna) ? s.logo_border_warna : '#0F4C5C'; if (dk && lum(bw) < .2) bw = mix(bw, .6);
-  css += '.brand .logo{border:' + (bt ? bt + 'px solid ' + bw : '0') + ';border-radius:' + bs + '%;' + (bt ? 'padding:2px;' : '') + '}';
   var st = document.getElementById('fsz');
   if (!st) { st = document.createElement('style'); st.id = 'fsz'; document.head.appendChild(st); }
   st.textContent = css;
@@ -385,9 +371,13 @@ function card(p) {
   return '<a class="card" href="#" data-post="' + esc(p.id) + '">' + (i ? '<img class="ph" src="' + esc(i) + '" alt="" loading="lazy">' : '') +
     '<div class="cb"><span class="meta">' + esc(fd(p.tanggal)) + '</span><h3>' + esc(p.judul) + '</h3><p>' + esc(p.ringkasan) + '</p><span class="more">Baca selengkapnya</span></div></a>';
 }
+function waLink(u, m) {
+  if (!u || !m || !/^https?:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(u) || /[?&]text=/i.test(u)) return u;
+  return u + (u.indexOf('?') < 0 ? '?' : '&') + 'text=' + encodeURIComponent(m);
+}
 function home() {
   closeSheet(); S.cur = {t: 'home'}; nav();
-  var s = S.s, h = im(s.hero_image), b = url(s.tombol_link);
+  var s = S.s, h = im(s.hero_image), b = waLink(url(s.tombol_link), s.pesan_wa);
   var sv = String(s.layanan || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 12).map(function (l, i) {
     var k = l.indexOf('|'), t = (k < 0 ? l : l.slice(0, k)).trim(), d = k < 0 ? '' : l.slice(k + 1).trim();
     return '<div class="sc"><div class="n">' + (i + 1) + '</div><strong>' + esc(t) + '</strong>' + (d ? '<p>' + esc(d) + '</p>' : '') + '</div>';
@@ -595,14 +585,12 @@ var FIELDS = [
   ['nama_usaha', 'Nama usaha', 'text'],
   ['logo_url', 'Logo', 'img', 'Opsional. Jika kosong, huruf pertama nama usaha dipakai.'],
   ['logo_size', 'Ukuran logo', 'logosz'],
-  ['logo_border', 'Border logo', 'logoborder'],
   ['label_atas', 'Label kecil di atas judul', 'text', 'Opsional. Contoh: Lubuk Pakam · Deli Serdang. Kosongkan untuk menyembunyikan.'],
   ['tagline', 'Judul utama beranda', 'text'],
   ['deskripsi', 'Deskripsi singkat', 'textarea'],
   ['tombol_teks', 'Teks tombol', 'text'],
   ['tombol_link', 'Link tombol', 'text', 'Contoh: wa.me/6281234567890, mailto:halo@usaha.com, atau https://…'],
-  ['nomor_wa', 'Nomor WhatsApp (tombol melayang)', 'text', 'Format 628xxxxxxxxxx atau 08xxxxxxxxxx. Kosongkan untuk menyembunyikan tombol.'],
-  ['pesan_wa', 'Pesan awal WhatsApp', 'text', 'Teks yang sudah terisi saat pengunjung membuka chat.'],
+  ['pesan_wa', 'Pesan awal WhatsApp', 'text', 'Terisi otomatis saat pengunjung menekan tombol, jika link tombol berupa wa.me/… Kosongkan jika tidak perlu.'],
   ['hero_image', 'Foto beranda', 'img'],
   ['info_bar', 'Kotak info di bawah foto', 'textarea', 'Opsional. Contoh: pembinaan atau penghargaan. Kosongkan untuk menyembunyikan.', 3],
   ['judul_layanan', 'Judul bagian layanan', 'text'],
@@ -627,18 +615,7 @@ var TYP = {
   embed: {n: 'Tampilkan halaman dari link', l: 'Link halaman', h: 'Halaman dimasukkan ke dalam tab. Sebagian situs menolak ditampilkan; jika kosong, pilih “Buka link di tab baru”.'},
   link: {n: 'Buka link di tab baru', l: 'Link tujuan', h: 'Tab ini langsung membuka link di jendela baru.'}
 };
-function rngRow(name, label, min, max, v, d) {
-  var n = Math.min(max, Math.max(min, parseInt(v, 10) || 0));
-  return '<div class="szr"><label for="z_' + name + '">' + label + '</label><input type="range" min="' + min + '" max="' + max + '" value="' + n + '" data-z="' + name + '" aria-label="' + label + '"><input id="z_' + name + '" name="' + name + '" type="number" min="' + min + '" max="' + max + '" value="' + n + '"><button type="button" class="bt" data-act="szreset" data-k="' + name + '" data-d="' + d + '">Standar</button></div>';
-}
 function fld(f, v) {
-  if (f[2] === 'logoborder') {
-    var q = (A.d && A.d.settings) || {}, wc = /^#[0-9a-f]{6}$/i.test(q.logo_border_warna) ? q.logo_border_warna : '#0F4C5C';
-    return '<div class="fg"><label>Border logo</label>' + rngRow('logo_border_tebal', 'Ketebalan (px)', 0, 6, q.logo_border_tebal, 0) +
-      '<div class="szr"><label for="z_logo_border_warna">Warna border</label><input id="z_logo_border_warna" name="logo_border_warna" type="color" value="' + wc + '"></div>' +
-      rngRow('logo_border_sudut', 'Sudut membulat (%)', 0, 50, q.logo_border_sudut, 0) +
-      '<small>Ketebalan 0 = tanpa border. Sudut 50% = logo berbentuk lingkaran. Di mode gelap, warna yang terlalu gelap otomatis dicerahkan agar border tetap terlihat.</small></div>';
-  }
   if (f[2] === 'logosz') { var st0 = (A.d && A.d.settings) || {}; return '<div class="fg"><label>Ukuran logo</label>' + szRow('ukuran_logo', 'Di komputer/tablet (px)', [16, 80, 32], st0.ukuran_logo) + szRow('ukuran_hp_logo', 'Di HP (px)', [16, 80, 32], st0.ukuran_hp_logo) + '<small>Logo tampil apa adanya tanpa kotak warna di belakangnya.</small></div>'; }
   var k = f[0], t = f[2], h = '<div class="fg"><label for="f_' + k + '">' + f[1] + '</label>';
   if (t === 'textarea') h += '<textarea id="f_' + k + '" name="' + k + '" rows="' + (f[4] || 3) + '">' + esc(v) + '</textarea>';
@@ -857,7 +834,7 @@ $('#ac').addEventListener('input', function (e) {
   var t = e.target;
   if (t.id === 'f_isi') prevUpd();
   if (t.dataset && t.dataset.z) t.form.elements[t.dataset.z].value = t.value;
-  else if (t.name && /^(ukuran_|gelap_|logo_border_)/.test(t.name)) { var r = t.form.querySelector('[data-z="' + t.name + '"]'); if (r) r.value = t.value; }
+  else if (t.name && /^(ukuran_|gelap_)/.test(t.name)) { var r = t.form.querySelector('[data-z="' + t.name + '"]'); if (r) r.value = t.value; }
 });
 $('#ac').addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && /^ip_(url|k)$/.test(e.target.id)) { e.preventDefault(); insImg(); }
