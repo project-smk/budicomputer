@@ -562,7 +562,9 @@ function refreshPublic() {
 }
 
 /* ============ LOGIN ============ */
-function showLogin() { $('#lerr').textContent = ''; $('#modal').hidden = false; $('#lu').focus(); }
+function warm() { if (warm.t && Date.now() - warm.t < 240000) return; warm.t = Date.now(); api('ping', {}, 1).catch(function () {}); }
+function showLogin() { warm(); $('#lerr').textContent = ''; $('#modal').hidden = false; $('#lu').focus(); }
+$('#btnAdmin').addEventListener('pointerenter', warm);
 $('#btnAdmin').addEventListener('click', function () { if (S.token) openAdmin(); else showLogin(); });
 document.addEventListener('change', function (e) {
   if (!e.target.classList || !e.target.classList.contains('sp')) return;
@@ -573,10 +575,10 @@ $('#lcancel').addEventListener('click', function () { $('#modal').hidden = true;
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('#modal').hidden = true; });
 $('#loginForm').addEventListener('submit', function (e) {
   e.preventDefault();
-  var b = $('#lgo'); b.disabled = true; $('#lerr').textContent = '';
+  var b = $('#lgo'); b.disabled = true; b.textContent = 'Memproses…'; $('#lerr').textContent = '';
   api('login', {username: $('#lu').value, password: $('#lp').value}).then(function (r) {
-    tok(r.token); $('#lp').value = ''; $('#modal').hidden = true; openAdmin();
-  }).catch(function (x) { $('#lerr').textContent = msg(x); }).then(function () { b.disabled = false; });
+    tok(r.token); $('#lp').value = ''; $('#modal').hidden = true; openAdmin(r.admin);
+  }).catch(function (x) { $('#lerr').textContent = msg(x); }).then(function () { b.disabled = false; b.textContent = 'Masuk'; });
 });
 
 /* ============ PANEL ADMIN ============ */
@@ -639,7 +641,11 @@ function vals(form) {
   [].forEach.call(form.elements, function (e) { if (e.name) o[e.name] = e.type === 'checkbox' ? (e.checked ? 'ya' : 'tidak') : e.value; });
   return o;
 }
-function openAdmin() { $('#admin').hidden = false; document.body.style.overflow = 'hidden'; A.sec = 'set'; A.ed = null; hpush({ov: 'admin'}); adminLoad(); }
+function openAdmin(d) {
+  $('#admin').hidden = false; document.body.style.overflow = 'hidden'; A.sec = 'set'; A.ed = null; hpush({ov: 'admin'});
+  if (d) { A.d = d; adminRender(); return; }
+  $('#ac').innerHTML = '<p class="meta" style="padding:8px">Memuat data admin…</p>'; adminLoad();
+}
 function hideAdmin() { $('#admin').hidden = true; document.body.style.overflow = ''; }
 function closeAdmin() { hideAdmin(); hclose('admin'); }
 function adminLoad() {
