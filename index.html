@@ -40,6 +40,25 @@ main{flex:1}
 .btn.sm{padding:10px 16px}
 .bt{background:#fff;border:1px solid var(--fld);border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer;font-size:14px}
 .bt.dng{color:#B42318;border-color:#B42318}
+/* rancangan baru: label, info, layanan, kontak */
+.kick{display:inline-block;padding:6px 14px;border-radius:999px;background:#E3EFF1;color:var(--p);font-weight:700;font-size:13px}
+.bs{display:flex;gap:12px;flex-wrap:wrap}
+.hero .btn{background:var(--a)}
+.btn.ghost,.hero .btn.ghost{background:transparent;color:var(--p);border:1px solid var(--p)}
+.info{margin-top:24px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 22px;font-size:15px;line-height:1.6;color:var(--mut)}
+.sec{padding:48px 0 0}
+.sec h2{font-size:26px;margin:0 0 20px}
+.svc{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.sc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px}
+.sc .n{width:34px;height:34px;border-radius:50%;background:var(--p);color:#fff;font-weight:700;display:grid;place-items:center;margin-bottom:14px}
+.sc strong{display:block;font-size:16px}
+.sc p{margin:8px 0 0;font-size:14px;line-height:1.6;color:var(--mut)}
+.cta{background:var(--p);color:#fff;border-radius:20px;padding:36px;display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:16px 0 56px}
+.cta>div{flex:1 1 320px}
+.cta h2{font-size:26px;margin:0 0 10px;color:#fff}
+.cta p{margin:0;line-height:1.8;color:#E3EFF1;font-size:15px;white-space:pre-line}
+.cta .btn{background:var(--a)}
+@media(max-width:639px){.cta{padding:24px}}
 /* posts */
 .posts{padding:40px 0}
 .sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
@@ -307,13 +326,28 @@ function card(p) {
 function home() {
   S.cur = {t: 'home'}; nav();
   var s = S.s, h = im(s.hero_image), b = url(s.tombol_link);
+  var sv = String(s.layanan || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 12).map(function (l, i) {
+    var k = l.indexOf('|'), t = (k < 0 ? l : l.slice(0, k)).trim(), d = k < 0 ? '' : l.slice(k + 1).trim();
+    return '<div class="sc"><div class="n">' + (i + 1) + '</div><strong>' + esc(t) + '</strong>' + (d ? '<p>' + esc(d) + '</p>' : '') + '</div>';
+  });
   var btn = s.tombol_teks && b ? '<a class="btn" href="' + esc(b) + '" target="_blank" rel="noopener">' + esc(s.tombol_teks) + '</a>' : '';
-  $('#view').innerHTML = '<div class="wrap"><section class="hero"><div><h1>' + esc(s.tagline) + '</h1>' + (s.deskripsi ? '<p>' + esc(s.deskripsi) + '</p>' : '') + btn + '</div>' +
+  var ghost = sv.length ? '<button class="btn ghost" type="button" data-scroll="layanan">Lihat Layanan</button>' : '';
+  $('#view').innerHTML = '<div class="wrap"><section class="hero"><div>' + (s.label_atas ? '<span class="kick">' + esc(s.label_atas) + '</span>' : '') +
+    '<h1>' + esc(s.tagline) + '</h1>' + (s.deskripsi ? '<p>' + esc(s.deskripsi) + '</p>' : '') + ((btn || ghost) ? '<div class="bs">' + btn + ghost + '</div>' : '') + '</div>' +
     (h ? '<div><img src="' + esc(h) + '" alt=""></div>' : '') + '</section>' +
+    (s.info_bar ? '<div class="info">' + esc(s.info_bar) + '</div>' : '') +
+    (sv.length ? '<section class="sec" id="layanan"><h2>' + esc(s.judul_layanan || 'Layanan') + '</h2><div class="svc">' + sv.join('') + '</div></section>' : '') +
     '<section class="posts"><div class="sh"><h2 class="jp">' + esc(s.judul_postingan) + '</h2>' + (S.total > S.latest.length ? '<a href="#" data-all>Lihat semua</a>' : '') + '</div>' +
-    (S.latest.length ? '<div class="grid">' + S.latest.map(card).join('') + '</div>' : '<p class="meta">Belum ada postingan.</p>') + '</section></div>';
+    (S.latest.length ? '<div class="grid">' + S.latest.map(card).join('') + '</div>' : '<p class="meta">Belum ada postingan.</p>') + '</section>' +
+    (s.kontak_teks ? '<section class="cta"><div><h2>' + esc(s.judul_kontak || 'Hubungi Kami') + '</h2><p>' + esc(s.kontak_teks) + '</p></div>' + btn + '</section>' : '') + '</div>';
   window.scrollTo(0, 0);
 }
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-scroll]');
+  if (!b) return;
+  var t = document.getElementById(b.dataset.scroll);
+  if (t) t.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth'});
+});
 function loading() { $('#view').innerHTML = '<div class="wrap"><p class="meta pad">Memuat…</p></div>'; window.scrollTo(0, 0); }
 function fail(e) { $('#view').innerHTML = '<div class="wrap"><p class="pad">Gagal memuat: ' + esc(msg(e)) + ' <a href="#" data-back>Kembali</a></p></div>'; }
 function postView(id) {
@@ -392,11 +426,17 @@ var FIELDS = [
   ['judul_halaman', 'Judul halaman (tab browser)', 'text'],
   ['nama_usaha', 'Nama usaha', 'text'],
   ['logo_url', 'Logo', 'img', 'Opsional. Jika kosong, huruf pertama nama usaha dipakai.'],
+  ['label_atas', 'Label kecil di atas judul', 'text', 'Opsional. Contoh: Lubuk Pakam · Deli Serdang. Kosongkan untuk menyembunyikan.'],
   ['tagline', 'Judul utama beranda', 'text'],
   ['deskripsi', 'Deskripsi singkat', 'textarea'],
   ['tombol_teks', 'Teks tombol', 'text'],
   ['tombol_link', 'Link tombol', 'text', 'Contoh: wa.me/6281234567890, mailto:halo@usaha.com, atau https://…'],
   ['hero_image', 'Foto beranda', 'img'],
+  ['info_bar', 'Kotak info di bawah foto', 'textarea', 'Opsional. Contoh: pembinaan atau penghargaan. Kosongkan untuk menyembunyikan.', 3],
+  ['judul_layanan', 'Judul bagian layanan', 'text'],
+  ['layanan', 'Daftar layanan', 'textarea', 'Satu layanan per baris, format: Judul | Penjelasan singkat. Kosongkan untuk menyembunyikan bagian ini.', 7],
+  ['judul_kontak', 'Judul kotak kontak (bawah)', 'text'],
+  ['kontak_teks', 'Isi kotak kontak', 'textarea', 'Alamat, email, telepon (satu per baris). Tombolnya memakai teks & link tombol di atas. Kosongkan untuk menyembunyikan.', 4],
   ['judul_postingan', 'Judul bagian postingan', 'text'],
   ['jumlah_postingan', 'Jumlah postingan di beranda (1–12)', 'number'],
   ['footer_kiri', 'Footer kiri (nama / alamat)', 'text'],
