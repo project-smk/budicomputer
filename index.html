@@ -388,6 +388,8 @@ function home() {
   });
   var btn = s.tombol_teks && b ? '<a class="btn" href="' + esc(b) + '" target="_blank" rel="noopener">' + esc(s.tombol_teks) + '</a>' : '';
   var ghost = sv.length ? '<button class="btn ghost" type="button" data-scroll="layanan">Lihat Layanan</button>' : '';
+  var pt = S.tabs.filter(function (t) { return t.tipe === 'presensi'; })[0];
+  if (pt) ghost += '<button class="btn ghost" type="button" data-gotab="' + esc(pt.id) + '">Presensi Siswa</button>';
   $('#view').innerHTML = '<div class="wrap"><section class="hero"><div>' + (s.label_atas ? '<span class="kick">' + esc(s.label_atas) + '</span>' : '') +
     '<h1>' + esc(s.tagline) + '</h1>' + (s.deskripsi ? '<p>' + esc(s.deskripsi) + '</p>' : '') + ((btn || ghost) ? '<div class="bs">' + btn + ghost + '</div>' : '') + '</div>' +
     (h ? '<div><img src="' + esc(h) + '" alt=""></div>' : '') + '</section>' +
@@ -555,7 +557,10 @@ $('#view').addEventListener('click', function (e) {
   if (a.dataset.post) go({t: 'post', id: a.dataset.post}); else if ('all' in a.dataset) go({t: 'all'}); else goBack();
 });
 function applyPublic(d, rerender) {
-  S.s = d.settings; S.tabs = d.tabs; S.latest = d.latest; S.total = d.total;
+  S.s = d.settings; S.latest = d.latest; S.total = d.total;
+  S.tabs = d.tabs.slice();
+  // tab Presensi selalu tersedia; baru disembunyikan bila server (versi baru) menyatakan admin menyembunyikannya
+  if (!S.tabs.some(function (t) { return t.tipe === 'presensi'; }) && d.pres === undefined) S.tabs.push({id: 't_presensi', nama: 'Presensi', tipe: 'presensi', isi: ''});
   theme(); nav(); if (rerender) home();
   setTimeout(prefetch, 800);
 }
@@ -627,7 +632,7 @@ $('#view').addEventListener('submit', function (e) {
   api('pLogin', {kode: k, pin: $('#pp').value}).then(function (r) {
     ptok(r.token); P.d = r.data; try { localStorage.setItem('wp_pk', k); } catch (x) {}
     if (pOn()) presDash();
-  }).catch(function (x) { $('#perr').textContent = msg(x); b.disabled = false; });
+  }).catch(function (x) { $('#perr').textContent = /Aksi tidak dikenal/.test(msg(x)) ? 'Server belum diperbarui. Di Apps Script: Deploy > Kelola deployment > Edit > Versi baru.' : msg(x); b.disabled = false; });
 });
 $('#view').addEventListener('click', function (e) {
   var b = e.target.closest('[data-pa]'); if (!b) return;
@@ -635,6 +640,9 @@ $('#view').addEventListener('click', function (e) {
   presAbsen(b.dataset.pa, b);
 });
 
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-gotab]'); if (b) go({t: 'tab', id: b.dataset.gotab});
+});
 /* ============ LOGIN ============ */
 function warm() { if (warm.t && Date.now() - warm.t < 240000) return; warm.t = Date.now(); api('ping', {}, 1).catch(function () {}); }
 function showLogin() { warm(); $('#lerr').textContent = ''; $('#modal').hidden = false; $('#lu').focus(); }
