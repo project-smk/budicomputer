@@ -142,7 +142,7 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
 <div class="modal" id="modal" hidden><form class="box" id="loginForm" aria-labelledby="lt">
   <h2 id="lt">Masuk admin</h2>
   <div class="fg"><label for="lu">Username</label><input id="lu" autocomplete="username" required></div>
-  <div class="fg"><label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password" required></div>
+  <div class="fg"><label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password" required><label class="meta" style="display:flex;gap:6px;align-items:center;margin-top:6px"><input type="checkbox" class="sp"> Tampilkan password</label></div>
   <div class="err" id="lerr" role="alert"></div>
   <div class="acts" style="margin-top:8px"><button class="btn" id="lgo" type="submit">Masuk</button><button class="bt" type="button" id="lcancel">Batal</button></div>
 </form></div>
@@ -155,7 +155,7 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
 
 <script>
 /* ===== PENGATURAN: tempel URL web app Apps Script Anda di sini ===== */
-var API_URL = 'https://script.google.com/macros/s/AKfycbz-Y9D54MLNd9W26HtTBMSCXbaKuOZhlrGF8EkUZA-5rmXQloWbXLA_u804yXCdYCg3/exec';   // contoh: https://script.google.com/macros/s/AKfy.../exec
+var API_URL = 'GANTI_DENGAN_URL_WEB_APP_APPS_SCRIPT';   // contoh: https://script.google.com/macros/s/AKfy.../exec
 /* =================================================================== */
 var CK = 'wp_pub_v1';
 var S = {s: {}, tabs: [], latest: [], total: 0, cur: {t: 'home'}, token: null};
@@ -291,6 +291,11 @@ function refreshPublic() {
 /* ============ LOGIN ============ */
 function showLogin() { $('#lerr').textContent = ''; $('#modal').hidden = false; $('#lu').focus(); }
 $('#btnAdmin').addEventListener('click', function () { if (S.token) openAdmin(); else showLogin(); });
+document.addEventListener('change', function (e) {
+  if (!e.target.classList || !e.target.classList.contains('sp')) return;
+  var f = e.target.closest('form');
+  Array.prototype.forEach.call(f.querySelectorAll('input[name=o],input[name=n1],input[name=n2],#lp'), function (i) { i.type = e.target.checked ? 'text' : 'password'; });
+});
 $('#lcancel').addEventListener('click', function () { $('#modal').hidden = true; });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('#modal').hidden = true; });
 $('#loginForm').addEventListener('submit', function (e) {
@@ -395,6 +400,7 @@ function secAcc() {
     '<div class="fg"><label for="o">Password lama</label><input id="o" name="o" type="password" autocomplete="current-password" required></div>' +
     '<div class="fg"><label for="n1">Password baru</label><input id="n1" name="n1" type="password" autocomplete="new-password" minlength="8" required><small>Minimal 8 karakter.</small></div>' +
     '<div class="fg"><label for="n2">Ulangi password baru</label><input id="n2" name="n2" type="password" autocomplete="new-password" required></div>' +
+    '<div class="fg"><label class="meta" style="display:flex;gap:6px;align-items:center;margin-top:6px"><input type="checkbox" class="sp"> Tampilkan password</label></div>' +
     '<button class="btn" type="submit">Ganti password</button></form>';
 }
 function byId(list, id) { return list.filter(function (x) { return String(x.id) === String(id); })[0]; }
@@ -407,7 +413,7 @@ $('#ac').addEventListener('click', function (e) {
   var a = b.dataset.act, id = b.dataset.id;
   if (a === 'pick') { $('#ac').querySelector('[data-file="' + b.dataset.k + '"]').click(); return; }
   if (a === 'cancel') { A.ed = null; adminRender(); return; }
-  if (a === 'newpost') { A.ed = {k: 'post', v: {id: '', judul: '', ringkasan: '', isi: '', gambar: '', tanggal: new Date().toISOString().slice(0, 10), status: 'terbit'}}; adminRender(); return; }
+  if (a === 'newpost') { A.ed = {k: 'post', v: {id: '', judul: '', ringkasan: '', isi: '', gambar: '', tanggal: (function (d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })(new Date()), status: 'terbit'}}; adminRender(); return; }
   if (a === 'editpost') { A.ed = {k: 'post', v: byId(A.d.posts, id)}; adminRender(); return; }
   if (a === 'newtab') { A.ed = {k: 'tab', v: {id: '', nama: '', tipe: 'html', isi: '', aktif: 'ya'}}; adminRender(); return; }
   if (a === 'edittab') { A.ed = {k: 'tab', v: byId(A.d.tabs, id)}; adminRender(); return; }
