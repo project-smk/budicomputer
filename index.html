@@ -6,7 +6,7 @@
 <title>Profil Usaha</title>
 <link rel="icon" type="image/png" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDe9GDtT8FV08iVmLcmqOn_xocE-bhY6Be78iNFq8Y_CGQtnlxXmOngnHjGqHsE4Lffgy4gKGA4MawDftRselAbk5oCNFZoXr8TRTp8vTKHIPMbveqFSgtSjlaBgclRi_qU9NJVBnw4aSpLQ08rHdyJbjfzYhnuez7mafH4RF5FwJ8XulcSiNICmhYwtLK/s320/BUDI%20KOMPUTER.png">
 <link rel="apple-touch-icon" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDe9GDtT8FV08iVmLcmqOn_xocE-bhY6Be78iNFq8Y_CGQtnlxXmOngnHjGqHsE4Lffgy4gKGA4MawDftRselAbk5oCNFZoXr8TRTp8vTKHIPMbveqFSgtSjlaBgclRi_qU9NJVBnw4aSpLQ08rHdyJbjfzYhnuez7mafH4RF5FwJ8XulcSiNICmhYwtLK/s320/BUDI%20KOMPUTER.png">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--p:#0F4C5C;--a:#B45309;--bg:#F4F7F8;--ink:#14262B;--mut:#4A5F66;--line:#D5E1E4;--fld:#8CA3AA}
 *{box-sizing:border-box}
@@ -193,13 +193,62 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
 .prev{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;max-height:460px;overflow:auto}
 @media(max-width:639px){.ipn .row{grid-template-columns:1fr;gap:0}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* ===== TEMA FUTURISTIK (situs publik gelap; panel admin tetap terang) ===== */
+:root{--bg:#070D16;--ink:#E6EEF5;--mut:#93A7B8;--line:#16303F;--fld:#1E4256;--pn:#0C1624;--cy:#5CE1E6;--am:#FFB020}
+#admin,.modal,#toast{--bg:#F4F7F8;--ink:#14262B;--mut:#4A5F66;--line:#D5E1E4;--fld:#8CA3AA;color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+body{font-family:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif;background-color:var(--bg);background-image:linear-gradient(rgba(92,225,230,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(92,225,230,.05) 1px,transparent 1px);background-size:48px 48px}
+a{color:var(--cy)}
+#admin a,.modal a{color:var(--a)}
+.top{background:rgba(7,13,22,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom-color:var(--line)}
+.brand{letter-spacing:.08em;text-transform:uppercase}
+.logo{background:transparent;color:var(--cy);border:1px solid var(--cy);font-family:'JetBrains Mono',monospace}
+img.logo{border-color:var(--fld)}
+.rg{grid-area:l;display:flex;align-items:center;gap:14px}
+.st{font:600 12px/1 'JetBrains Mono',monospace;color:var(--mut);letter-spacing:.06em}
+.st i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ADE80;margin-right:6px;box-shadow:0 0 8px #4ADE80}
+.t{color:var(--mut);border:1px solid transparent;border-radius:999px}
+.t:hover{background:transparent;color:var(--ink)}
+.t[aria-current=page]{background:transparent;color:var(--cy);border-color:var(--cy)}
+.top .ib,.sheet .ib{background:var(--pn);border-color:var(--fld);color:var(--cy)}
+.kick{background:transparent;border:1px solid var(--fld);border-radius:4px;color:var(--cy);font:600 12px/1.2 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:5px 10px}
+.kick::before{content:"// "}
+.hero h1{letter-spacing:-.02em}
+.hero p{color:var(--mut)}
+.hl{color:var(--cy)}
+.btn.ghost,.hero .btn.ghost{background:transparent;color:var(--cy);border:1px solid var(--cy)}
+.hero .btn,.cta .btn{background:var(--am);color:#1A1000;font-weight:700}
+.hv{position:relative;border:1px solid var(--fld);border-radius:16px;overflow:hidden;background:repeating-linear-gradient(135deg,#0F2030 0 10px,#0B1826 10px 20px);box-shadow:0 0 48px rgba(92,225,230,.14)}
+.hv img{border-radius:0}
+.chips{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;flex-wrap:wrap}
+.chips span{background:var(--bg);border:1px solid var(--fld);border-radius:999px;padding:5px 11px;font:400 11px/1 'JetBrains Mono',monospace;text-transform:uppercase;color:var(--ink)}
+.info{background:#0A1320;border-color:var(--line);color:var(--mut);font:400 12px/1.5 'JetBrains Mono',monospace}
+.info::before{content:"\25B8  ";color:var(--cy)}
+.sh h2 .cnt{font:600 12px 'JetBrains Mono',monospace;color:var(--cy);margin-left:10px;letter-spacing:.06em}
+.sh a{color:var(--cy);font-weight:500;font-size:14px}
+.card,.sc{background:var(--pn);border-color:var(--line)}
+.card:hover{border-color:var(--cy)}
+.card .meta{font:400 11px/1.2 'JetBrains Mono',monospace;color:var(--cy);text-transform:uppercase}
+.card .more{display:none}
+.sc .n{width:auto;height:auto;border-radius:0;background:none;margin-bottom:8px;color:var(--cy);font:600 13px/1 'JetBrains Mono',monospace;display:block}
+.cta{background:#0A1320;border:1px solid var(--fld);box-shadow:0 0 40px rgba(92,225,230,.08)}
+.cta h2{color:var(--ink)}
+.cta p{color:var(--mut);font:400 13px/1.9 'JetBrains Mono',monospace}
+footer{background:transparent;border-top:1px solid var(--line);color:var(--mut);font:400 12px/1.5 'JetBrains Mono',monospace}
+.frame{background:var(--pn)}
+.sheet{background:rgba(3,7,12,.62)}
+.sheet .sp{background:var(--pn);border-top:1px solid var(--cy);color:var(--ink);box-shadow:0 -12px 40px rgba(92,225,230,.12)}
+.sheet .sc{background:var(--bg)}
+@media(min-width:1024px){.hero h1{font-size:clamp(34px,3.6vw,50px)}}
+@media(min-width:1024px) and (max-height:760px){.hero h1{font-size:32px}}
+@media(max-width:639px){.st{display:none}}
 </style>
 </head>
 <body>
 <header class="top"><div class="bar">
   <a class="brand" id="brand" href="#"><span id="logo"></span><span id="brandName"></span></a>
   <nav id="nav" aria-label="Menu utama"></nav>
-  <button class="ib" id="btnAdmin" aria-label="Masuk admin"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></button>
+  <div class="rg"><span class="st"><i></i>ONLINE</span><button class="ib" id="btnAdmin" aria-label="Masuk admin"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></button></div>
 </div></header>
 <main id="view"></main>
 <footer><div class="wrap fin"><span id="fl"></span><span id="fr"></span></div></footer>
@@ -307,6 +356,9 @@ function theme() {
   var s = S.s, r = document.documentElement.style, ok = /^#[0-9a-f]{6}$/i;
   r.setProperty('--p', ok.test(s.warna_utama) ? s.warna_utama : '#0F4C5C');
   r.setProperty('--a', ok.test(s.warna_aksen) ? s.warna_aksen : '#B45309');
+  // tema gelap: warna cyan/amber bawaan dipakai, kecuali admin memilih warna lain di pengaturan
+  r.setProperty('--cy', ok.test(s.warna_utama) && s.warna_utama.toLowerCase() !== '#0f4c5c' ? s.warna_utama : '#5CE1E6');
+  r.setProperty('--am', ok.test(s.warna_aksen) && s.warna_aksen.toLowerCase() !== '#b45309' ? s.warna_aksen : '#FFB020');
   document.title = s.judul_halaman || s.nama_usaha || 'Profil Usaha';
   $('#brandName').textContent = s.nama_usaha || '';
   var l = im(s.logo_url);
@@ -337,17 +389,18 @@ function card(p) {
 function home() {
   closeSheet(); S.cur = {t: 'home'}; nav();
   var s = S.s, h = im(s.hero_image), b = url(s.tombol_link);
-  var sv = String(s.layanan || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 12).map(function (l, i) {
+  var sn = [], sv = String(s.layanan || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 12).map(function (l, i) {
     var k = l.indexOf('|'), t = (k < 0 ? l : l.slice(0, k)).trim(), d = k < 0 ? '' : l.slice(k + 1).trim();
-    return '<div class="sc"><div class="n">' + (i + 1) + '</div><strong>' + esc(t) + '</strong>' + (d ? '<p>' + esc(d) + '</p>' : '') + '</div>';
+    sn.push(t);
+    return '<div class="sc"><div class="n">' + ('0' + (i + 1)).slice(-2) + '</div><strong>' + esc(t) + '</strong>' + (d ? '<p>' + esc(d) + '</p>' : '') + '</div>';
   });
   var btn = s.tombol_teks && b ? '<a class="btn" href="' + esc(b) + '" target="_blank" rel="noopener">' + esc(s.tombol_teks) + '</a>' : '';
   var ghost = sv.length ? '<button class="btn ghost" type="button" data-scroll="layanan">Lihat Layanan</button>' : '';
   $('#view').innerHTML = '<div class="wrap"><section class="hero"><div>' + (s.label_atas ? '<span class="kick">' + esc(s.label_atas) + '</span>' : '') +
-    '<h1>' + esc(s.tagline) + '</h1>' + (s.deskripsi ? '<p>' + esc(s.deskripsi) + '</p>' : '') + ((btn || ghost) ? '<div class="bs">' + btn + ghost + '</div>' : '') + '</div>' +
-    (h ? '<div><img src="' + esc(h) + '" alt=""></div>' : '') + '</section>' +
+    '<h1>' + esc(s.tagline).replace(/\*\*(.+?)\*\*/g, '<span class="hl">$1</span>') + '</h1>' + (s.deskripsi ? '<p>' + esc(s.deskripsi) + '</p>' : '') + ((btn || ghost) ? '<div class="bs">' + btn + ghost + '</div>' : '') + '</div>' +
+    (h ? '<div class="hv"><img src="' + esc(h) + '" alt="">' + (sn.length ? '<div class="chips">' + sn.slice(0, 3).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' : '') + '</div>' : '') + '</section>' +
     (s.info_bar ? '<div class="info">' + esc(s.info_bar) + '</div>' : '') +
-    '<section class="posts"><div class="sh"><h2 class="jp">' + esc(s.judul_postingan) + '</h2>' + (S.total > S.latest.length ? '<a href="#" data-all>Lihat semua</a>' : '') + '</div>' +
+    '<section class="posts"><div class="sh"><h2 class="jp">' + esc(s.judul_postingan) + (S.latest.length ? '<span class="cnt">01—' + ('0' + S.latest.length).slice(-2) + '</span>' : '') + '</h2>' + (S.total > S.latest.length ? '<a href="#" data-all>Lihat semua</a>' : '') + '</div>' +
     (S.latest.length ? '<div class="grid">' + S.latest.map(card).join('') + '</div>' : '<p class="meta">Belum ada postingan.</p>') + '</section>' +
     (sv.length ? '<section class="sec" id="layanan"><h2>' + esc(s.judul_layanan || 'Layanan') + '</h2><div class="svc">' + sv.join('') + '</div></section>' : '') +
     (s.kontak_teks ? '<section class="cta"><div><h2>' + esc(s.judul_kontak || 'Hubungi Kami') + '</h2><p>' + esc(s.kontak_teks) + '</p></div>' + btn + '</section>' : '') + '</div>';
@@ -444,7 +497,7 @@ function tabView(t) {
   var f = $('#view iframe');
   if (t.tipe === 'embed') { f.src = url(t.isi); return; }
   swr('tab', {id: t.id}, 'tab_' + t.id, function (d) {
-    if (S.cur.id === t.id) f.srcdoc = '<style>body{font:16px/1.7 system-ui,sans-serif;color:#14262B;margin:0;padding:24px;max-width:820px}img{max-width:100%}</style>' + d.isi;
+    if (S.cur.id === t.id) f.srcdoc = '<style>body{font:16px/1.7 system-ui,sans-serif;color:#E6EEF5;margin:0;padding:24px;max-width:820px}a{color:#5CE1E6}h1,h2,h3{color:#fff}img{max-width:100%}</style>' + d.isi;
   }, function (e) { f.srcdoc = '<p style="font-family:sans-serif">' + esc(msg(e)) + '</p>'; });
 }
 $('#brand').addEventListener('click', function (e) { e.preventDefault(); home(); });
@@ -492,7 +545,7 @@ var FIELDS = [
   ['nama_usaha', 'Nama usaha', 'text'],
   ['logo_url', 'Logo', 'img', 'Opsional. Jika kosong, huruf pertama nama usaha dipakai.'],
   ['label_atas', 'Label kecil di atas judul', 'text', 'Opsional. Contoh: Lubuk Pakam · Deli Serdang. Kosongkan untuk menyembunyikan.'],
-  ['tagline', 'Judul utama beranda', 'text'],
+  ['tagline', 'Judul utama beranda', 'text', 'Tulis **kata** di antara dua tanda bintang untuk menyorotnya dengan warna cyan.'],
   ['deskripsi', 'Deskripsi singkat', 'textarea'],
   ['tombol_teks', 'Teks tombol', 'text'],
   ['tombol_link', 'Link tombol', 'text', 'Contoh: wa.me/6281234567890, mailto:halo@usaha.com, atau https://…'],
