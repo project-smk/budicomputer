@@ -366,6 +366,9 @@ function theme() {
   }).join('') + '}';
   var lz = function (k, d) { var n = parseInt(s[k], 10); return (n >= 16 && n <= 80) ? n : d; };
   css += '.logo{width:' + lz('ukuran_logo', 32) + 'px;height:' + lz('ukuran_logo', 32) + 'px}@media(max-width:639px){.logo{width:' + lz('ukuran_hp_logo', 32) + 'px;height:' + lz('ukuran_hp_logo', 32) + 'px}}';
+  var bt = Math.min(6, Math.max(0, parseInt(s.logo_border_tebal, 10) || 0)), bs = Math.min(50, Math.max(0, parseInt(s.logo_border_sudut, 10) || 0));
+  var bw = ok.test(s.logo_border_warna) ? s.logo_border_warna : '#0F4C5C'; if (dk && lum(bw) < .2) bw = mix(bw, .6);
+  css += '.brand .logo{border:' + (bt ? bt + 'px solid ' + bw : '0') + ';border-radius:' + bs + '%;' + (bt ? 'padding:2px;' : '') + '}';
   var st = document.getElementById('fsz');
   if (!st) { st = document.createElement('style'); st.id = 'fsz'; document.head.appendChild(st); }
   st.textContent = css;
@@ -592,6 +595,7 @@ var FIELDS = [
   ['nama_usaha', 'Nama usaha', 'text'],
   ['logo_url', 'Logo', 'img', 'Opsional. Jika kosong, huruf pertama nama usaha dipakai.'],
   ['logo_size', 'Ukuran logo', 'logosz'],
+  ['logo_border', 'Border logo', 'logoborder'],
   ['label_atas', 'Label kecil di atas judul', 'text', 'Opsional. Contoh: Lubuk Pakam · Deli Serdang. Kosongkan untuk menyembunyikan.'],
   ['tagline', 'Judul utama beranda', 'text'],
   ['deskripsi', 'Deskripsi singkat', 'textarea'],
@@ -623,7 +627,18 @@ var TYP = {
   embed: {n: 'Tampilkan halaman dari link', l: 'Link halaman', h: 'Halaman dimasukkan ke dalam tab. Sebagian situs menolak ditampilkan; jika kosong, pilih “Buka link di tab baru”.'},
   link: {n: 'Buka link di tab baru', l: 'Link tujuan', h: 'Tab ini langsung membuka link di jendela baru.'}
 };
+function rngRow(name, label, min, max, v, d) {
+  var n = Math.min(max, Math.max(min, parseInt(v, 10) || 0));
+  return '<div class="szr"><label for="z_' + name + '">' + label + '</label><input type="range" min="' + min + '" max="' + max + '" value="' + n + '" data-z="' + name + '" aria-label="' + label + '"><input id="z_' + name + '" name="' + name + '" type="number" min="' + min + '" max="' + max + '" value="' + n + '"><button type="button" class="bt" data-act="szreset" data-k="' + name + '" data-d="' + d + '">Standar</button></div>';
+}
 function fld(f, v) {
+  if (f[2] === 'logoborder') {
+    var q = (A.d && A.d.settings) || {}, wc = /^#[0-9a-f]{6}$/i.test(q.logo_border_warna) ? q.logo_border_warna : '#0F4C5C';
+    return '<div class="fg"><label>Border logo</label>' + rngRow('logo_border_tebal', 'Ketebalan (px)', 0, 6, q.logo_border_tebal, 0) +
+      '<div class="szr"><label for="z_logo_border_warna">Warna border</label><input id="z_logo_border_warna" name="logo_border_warna" type="color" value="' + wc + '"></div>' +
+      rngRow('logo_border_sudut', 'Sudut membulat (%)', 0, 50, q.logo_border_sudut, 0) +
+      '<small>Ketebalan 0 = tanpa border. Sudut 50% = logo berbentuk lingkaran. Di mode gelap, warna yang terlalu gelap otomatis dicerahkan agar border tetap terlihat.</small></div>';
+  }
   if (f[2] === 'logosz') { var st0 = (A.d && A.d.settings) || {}; return '<div class="fg"><label>Ukuran logo</label>' + szRow('ukuran_logo', 'Di komputer/tablet (px)', [16, 80, 32], st0.ukuran_logo) + szRow('ukuran_hp_logo', 'Di HP (px)', [16, 80, 32], st0.ukuran_hp_logo) + '<small>Logo tampil apa adanya tanpa kotak warna di belakangnya.</small></div>'; }
   var k = f[0], t = f[2], h = '<div class="fg"><label for="f_' + k + '">' + f[1] + '</label>';
   if (t === 'textarea') h += '<textarea id="f_' + k + '" name="' + k + '" rows="' + (f[4] || 3) + '">' + esc(v) + '</textarea>';
@@ -842,7 +857,7 @@ $('#ac').addEventListener('input', function (e) {
   var t = e.target;
   if (t.id === 'f_isi') prevUpd();
   if (t.dataset && t.dataset.z) t.form.elements[t.dataset.z].value = t.value;
-  else if (t.name && /^(ukuran_|gelap_)/.test(t.name)) { var r = t.form.querySelector('[data-z="' + t.name + '"]'); if (r) r.value = t.value; }
+  else if (t.name && /^(ukuran_|gelap_|logo_border_)/.test(t.name)) { var r = t.form.querySelector('[data-z="' + t.name + '"]'); if (r) r.value = t.value; }
 });
 $('#ac').addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && /^ip_(url|k)$/.test(e.target.id)) { e.preventDefault(); insImg(); }
