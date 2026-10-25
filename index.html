@@ -591,8 +591,6 @@ function home() {
   });
   var btn = s.tombol_teks && b ? '<a class="btn" href="' + esc(b) + '" target="_blank" rel="noopener">' + esc(s.tombol_teks) + '</a>' : '';
   var ghost = sv.length ? '<button class="btn ghost" type="button" data-scroll="layanan">Lihat Layanan</button>' : '';
-  var pt = S.tabs.filter(function (t) { return t.tipe === 'presensi'; })[0];
-  if (pt) ghost += '<button class="btn ghost" type="button" data-gotab="' + esc(pt.id) + '">Presensi Siswa</button>';
   $('#view').innerHTML = '<div class="wrap"><section class="hero"><div>' + (s.label_atas ? '<span class="kick">' + esc(s.label_atas) + '</span>' : '') +
     '<h1>' + esc(s.tagline) + '</h1>' + (s.deskripsi ? '<p>' + esc(s.deskripsi) + '</p>' : '') + ((btn || ghost) ? '<div class="bs">' + btn + ghost + '</div>' : '') + '</div>' +
     (h ? '<div><img src="' + esc(h) + '" alt=""></div>' : '') + '</section>' +
