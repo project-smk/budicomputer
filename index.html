@@ -103,6 +103,7 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
 .side{width:220px;background:var(--card);border-right:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:4px;flex:none}
 .side button{text-align:left;background:none;border:0;border-radius:8px;padding:11px 12px;font-weight:600;cursor:pointer}
 .side button[aria-current=true]{background:var(--p);color:#fff}
+.side svg{display:none}
 #ac{flex:1;overflow:auto;padding:24px;min-width:0}
 .pane{max-width:760px}
 .ph2{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
@@ -139,10 +140,12 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
   .card h3{font-size:15px}
   .card p{display:none}
   .art h1{font-size:26px}
-  .ab{flex-direction:column}
-  .side{width:auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}
-  .side button{white-space:nowrap}
-  #ac{padding:16px}
+  .ab{flex-direction:column;overflow-y:auto;overflow-x:hidden}
+  .side{width:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px 16px;border-right:0;border-bottom:1px solid var(--line);flex:none}
+  .side button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;min-height:76px;padding:10px 4px;font-size:12.5px;line-height:1.2;background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow-wrap:anywhere}
+  .side button[aria-current=true]{border-color:var(--p)}
+  .side svg{display:block;width:24px;height:24px;flex:none}
+  #ac{padding:16px;flex:none;overflow:visible}
 }
 @media(min-width:1024px) and (max-height:760px){
   .hero{padding-top:12px}
@@ -630,8 +633,8 @@ function presView(t) {
 function presLogin(err) {
   var k = ''; try { k = localStorage.getItem('wp_pk') || ''; } catch (e) {}
   $('#view').innerHTML = '<div class="wrap"><div class="pg"><div class="phd"><small>Presensi Prakerin</small><b>Masuk dengan akun siswa</b></div>' +
-    '<form class="pc" id="pForm"><div class="fg"><label for="pk">Kode siswa</label><input id="pk" value="' + esc(k) + '" autocomplete="username" autocapitalize="off" required></div>' +
-    '<div class="fg"><label for="pp">PIN</label><input id="pp" type="password" inputmode="numeric" autocomplete="current-password" required></div>' +
+    '<form class="pc" id="pForm"><div class="fg"><label for="pk">Username</label><input id="pk" value="' + esc(k) + '" autocomplete="username" autocapitalize="off" required></div>' +
+    '<div class="fg"><label for="pp">Password</label><input id="pp" type="password" autocomplete="current-password" required></div>' +
     '<div class="err" id="perr" role="alert">' + esc(err || '') + '</div><button class="btn pbtn" type="submit">Masuk</button></form></div></div>';
 }
 function pstep(n, cls, title, desc, btn, extra) {
@@ -880,7 +883,17 @@ function guard(p) {
 }
 function adminRender() {
   var nav_ = [['set', 'Identitas & tampilan'], ['post', 'Postingan'], ['stat', 'Statistik'], ['pres', 'Presensi'], ['tab', 'Menu tab'], ['acc', 'Akun']];
-  $('#side').innerHTML = nav_.map(function (x) { return '<button data-sec="' + x[0] + '"' + (A.sec === x[0] ? ' aria-current="true"' : '') + '>' + x[1] + '</button>'; }).join('');
+  var IC = {
+    set: '<path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+    post: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+    stat: '<path d="M5 20V10M12 20V4M19 20v-7"/>',
+    pres: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/>',
+    tab: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
+    acc: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>'
+  };
+  $('#side').innerHTML = nav_.map(function (x) {
+    return '<button data-sec="' + x[0] + '"' + (A.sec === x[0] ? ' aria-current="true"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[x[0]] + '</svg><span>' + x[1] + '</span></button>';
+  }).join('');
   var h = A.d.mustChange ? '<div class="warn"><b>Ganti password sekarang.</b> Akun masih memakai password awal. Buka menu Akun (username juga bisa diganti).</div>' : '';
   $('#ac').innerHTML = '<div class="pane">' + h + ({set: secSet, post: secPost, stat: secStat, pres: secPres, tab: secTab, acc: secAcc}[A.sec])() + '</div>';
 }
@@ -1029,10 +1042,11 @@ function secPres() {
   var p = A.p, e, ed;
   if (A.ed && A.ed.k === 'kar') {
     e = A.ed.v; ed = !!A.ed.edit;
-    return '<div class="ph2"><h2>' + (ed ? 'Ubah data siswa' : 'Siswa baru') + '</h2></div><form data-form="kar">' +
-      fld(['kode', 'Kode siswa', 'text', 'Dipakai untuk masuk, mis. S001 (huruf/angka tanpa spasi). Tidak bisa diubah setelah dibuat.'], e.kode).replace('name="kode"', 'name="kode"' + (ed ? ' readonly' : '')) +
-      fld(['nama', 'Nama siswa', 'text'], e.nama) + fld(['sekolah', 'Asal sekolah', 'text', 'Contoh: SMK Negeri 1 Lubuk Pakam.'], e.sekolah) +
-      fld(['pin', 'PIN (4–12 angka)', 'text', 'Berikan kode dan PIN ini kepada siswa.'], e.pin) +
+    return '<div class="ph2"><h2>' + (ed ? 'Ubah akun' : 'Akun baru') + '</h2></div><form data-form="kar">' +
+      fld(['kode', 'Username', 'text', ed ? 'Username tidak bisa diubah setelah akun dibuat.' : '3 angka acak otomatis, boleh diubah. Dipakai untuk masuk, tidak boleh sama dengan akun lain, dan tidak bisa diubah setelah akun dibuat.'], e.kode).replace('name="kode"', 'name="kode" autocomplete="off"' + (ed ? ' readonly' : '')) +
+      fld(['pin', 'Password', 'text', '4 angka acak otomatis, boleh diubah (4–20 huruf/angka). Tidak boleh sama dengan akun lain.'], e.pin).replace('name="pin"', 'name="pin" autocomplete="off"') +
+      '<div class="acts" style="margin:-4px 0 14px">' + (ed ? '' : '<button type="button" class="bt" data-act="rnd" data-id="kode">Acak username</button>') + '<button type="button" class="bt" data-act="rnd" data-id="pin">Acak password</button></div>' +
+      fld(['nama', 'Nama lengkap', 'text'], e.nama) + fld(['sekolah', 'Asal sekolah', 'text', 'Contoh: SMK Negeri 1 Lubuk Pakam.'], e.sekolah) +
       '<div class="fg"><label for="f_peran">Peran akun</label><select id="f_peran" name="peran"><option value="siswa"' + (e.peran !== 'barcode' ? ' selected' : '') + '>Siswa (presensi)</option><option value="barcode"' + (e.peran === 'barcode' ? ' selected' : '') + '>Layar barcode (dipakai di lokasi PKL)</option></select><small>Buat 1 akun berperan Layar barcode, lalu login dengannya di HP/tablet/laptop di tempat PKL. Layar menampilkan QR yang berganti otomatis untuk discan siswa.</small></div>' +
       '<div class="fg"><label><input type="checkbox" name="aktif"' + (e.aktif !== 'tidak' ? ' checked' : '') + '> Aktif</label></div>' +
       '<div class="acts"><button class="btn" type="submit">Simpan</button><button class="bt" type="button" data-act="cancel">Batal</button></div></form>';
@@ -1063,10 +1077,10 @@ function presSet_() {
     fld(['presensi_lat', 'Latitude lokasi PKL', 'text'], st.presensi_lat) + fld(['presensi_lng', 'Longitude lokasi PKL', 'text'], st.presensi_lng) +
     '<div class="fg"><label><input type="checkbox" name="presensi_selfie"' + (st.presensi_selfie !== 'tidak' ? ' checked' : '') + '> Wajib foto selfie</label></div><div class="fg"><label><input type="checkbox" name="presensi_barcode"' + (st.presensi_barcode !== 'tidak' ? ' checked' : '') + '> Wajib scan barcode lokasi PKL</label></div>' +
     '<div class="acts"><button type="button" class="bt" data-act="geo">Pakai lokasi saya sekarang</button><button class="btn" type="submit">Simpan pengaturan</button></div></form>' +
-    '<div class="ph2" style="margin-top:28px"><h3>Siswa prakerin</h3><button class="btn sm" data-act="newkar">Tambah siswa</button></div>' +
+    '<div class="ph2" style="margin-top:28px"><h3>Akun presensi</h3><button class="btn sm" data-act="newkar">Tambah akun</button></div>' +
     (p.karyawan.length ? p.karyawan.map(function (k) {
-      return '<div class="li"><div><b>' + esc(k.nama) + '</b><span class="meta">' + (k.sekolah ? esc(k.sekolah) + ' · ' : '') + 'Kode ' + esc(k.kode) + ' · PIN ' + esc(k.pin) + (k.peran === 'barcode' ? ' · Layar barcode' : '') + (k.aktif === 'tidak' ? ' · Nonaktif' : '') + '</span></div><div class="acts"><button class="bt" data-act="editkar" data-id="' + esc(k.kode) + '">Ubah</button><button class="bt dng" data-act="delkar" data-id="' + esc(k.kode) + '">Hapus</button></div></div>';
-    }).join('') : '<p class="meta">Belum ada siswa.</p>');
+      return '<div class="li"><div><b>' + esc(k.nama) + '</b><span class="meta">' + (k.sekolah ? esc(k.sekolah) + ' · ' : '') + 'Username ' + esc(k.kode) + ' · Password ' + esc(k.pin) + (k.peran === 'barcode' ? ' · Layar barcode' : '') + (k.aktif === 'tidak' ? ' · Nonaktif' : '') + '</span></div><div class="acts"><button class="bt" data-act="editkar" data-id="' + esc(k.kode) + '">Ubah</button><button class="bt dng" data-act="delkar" data-id="' + esc(k.kode) + '">Hapus</button></div></div>';
+    }).join('') : '<p class="meta">Belum ada akun.</p>');
 }
 function presRek_() {
   var p = A.p, yr = new Date().getFullYear(), ys = '', off = {}, d, pre = p.year + '-' + ('0' + p.month).slice(-2) + '-';
@@ -1101,11 +1115,18 @@ function presDet_() {
   }
   return '<div class="pc" style="margin-bottom:12px"><h3>' + esc(s.nama) + ' · ' + esc(fd(q[1])) + '</h3>' + h + '</div>';
 }
+/* username 3 angka / password 4 angka acak, dipastikan tidak sama dengan akun yang sudah ada */
+function presGen(f, self) {
+  var used = {}; ((A.p && A.p.karyawan) || []).forEach(function (k) { used[String(f === 'kode' ? k.kode : k.pin).toLowerCase()] = 1; });
+  var lo = f === 'kode' ? 100 : 1000, n = f === 'kode' ? 900 : 9000, v;
+  for (var i = 0; i < 500; i++) { v = String(lo + Math.floor(Math.random() * n)); if (!used[v]) return v; }
+  return v;
+}
 function presAct(a, b, id) {
   var p = A.p, noop = function () {}, sw = function () { return p.karyawan.filter(function (k) { return k.peran !== 'barcode'; }); };
   if (a === 'pstab') { A.ps = id; A.sel = null; }
   else if (a === 'cell') A.sel = id || null;
-  else if (a === 'newkar') A.ed = {k: 'kar', v: {kode: '', nama: '', sekolah: '', pin: '', aktif: 'ya', peran: 'siswa'}};
+  else if (a === 'newkar') A.ed = {k: 'kar', v: {kode: presGen('kode', ''), nama: '', sekolah: '', pin: presGen('pin', ''), aktif: 'ya', peran: 'siswa'}};
   else if (a === 'editkar') A.ed = {k: 'kar', edit: 1, v: p.karyawan.filter(function (k) { return String(k.kode) === id; })[0]};
   else if (a === 'newrp') {
     if (!sw().length) { toast('Tambahkan siswa terlebih dahulu.', 1); return true; }
@@ -1113,7 +1134,7 @@ function presAct(a, b, id) {
     A.ed = {k: 'rp', v: {kode: q[0] || sw()[0].kode, tanggal: q[1] || todayStr(), status: 'Izin', masuk: '', pulang: '', catatan: ''}};
   }
   else if (a === 'editrp') A.ed = {k: 'rp', edit: 1, v: p.recs.filter(function (r) { return String(r.id) === id; })[0]};
-  else if (a === 'delkar') { if (confirm('Hapus siswa ini? Riwayat presensinya tetap tersimpan.')) guard(adm('deleteKaryawan', {kode: id})).then(function (l) { p.karyawan = l; adminRender(); toast('Data siswa dihapus.'); }).catch(noop); return true; }
+  else if (a === 'delkar') { if (confirm('Hapus akun ini? Riwayat presensinya tetap tersimpan.')) guard(adm('deleteKaryawan', {kode: id})).then(function (l) { p.karyawan = l; adminRender(); toast('Akun dihapus.'); }).catch(noop); return true; }
   else if (a === 'delrp') { if (confirm('Hapus catatan presensi ini?')) guard(adm('deletePresensi', {id: id, tahun: p.year, bulan: p.month})).then(function (d) { A.p = d; adminRender(); toast('Catatan dihapus.'); }).catch(noop); return true; }
   else if (a === 'geo') {
     var f = b.closest('form');
@@ -1124,6 +1145,7 @@ function presAct(a, b, id) {
     }, function () { toast('Izin lokasi ditolak.', 1); }, {enableHighAccuracy: true, timeout: 15000});
     return true;
   }
+  else if (a === 'rnd') { var f2 = b.closest('form'); f2.elements[id].value = presGen(id, ''); return true; }
   else if (a === 'xls') { presXls(); return true; }
   else if (a === 'pdf') { presPdf(); return true; }
   else return false;
@@ -1131,7 +1153,7 @@ function presAct(a, b, id) {
 }
 function presSubmit(k, v) {
   if (k === 'pset') return adm('saveSettings', {data: v}).then(function (s) { A.d.settings = s; toast('Pengaturan presensi disimpan.'); });
-  if (k === 'kar') return adm('saveKaryawan', {k: v, edit: !!(A.ed && A.ed.edit)}).then(function (l) { A.p.karyawan = l; A.ed = null; toast('Data siswa disimpan.'); });
+  if (k === 'kar') return adm('saveKaryawan', {k: v, edit: !!(A.ed && A.ed.edit)}).then(function (l) { A.p.karyawan = l; A.ed = null; toast('Akun disimpan.'); });
   if (k === 'rp') { v.tahun = A.p.year; v.bulan = A.p.month; return adm('savePresensi', {r: v}).then(function (d) { A.p = d; A.ed = null; toast('Presensi disimpan.'); }); }
   return adm('presRekap', {tahun: v.tahun, bulan: v.bulan}).then(function (d) { A.p = d; A.sel = null; });
 }
