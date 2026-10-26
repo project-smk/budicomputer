@@ -1007,22 +1007,64 @@ function shoot(v) {
   c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
   P.sf = c.toDataURL('image/jpeg', 0.7); camClose(); presDash();
 }
-function qrLoop(v) {
-  var go = function () {
-    var c = document.createElement('canvas'), x = c.getContext('2d', {willReadFrequently: true});
-    var tick = function () {
-      if (!CAM.s) return;
-      if (v.videoWidth) {
-        var k = Math.min(1, 480 / v.videoWidth); c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
-        x.drawImage(v, 0, 0, c.width, c.height);
-        var r = jsQR(x.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
-        if (r && /^PRS\|/.test(r.data)) { P.bc = {text: r.data, t: Date.now()}; camClose(); presDash(); toast('Barcode terbaca.'); return; }
-      }
-      CAM.raf = requestAnimationFrame(tick);
+/* muat pustaka dari beberapa sumber berurutan; lanjut ke sumber berikutnya bila gagal / terlalu lama */
+function loadJsAny(urls, ok) {
+  return new Promise(function (res, rej) {
+    var i = 0;
+    var next = function () {
+      if (ok()) return res();
+      if (i >= urls.length) return rej(new Error('gagal'));
+      var u = urls[i++], done = false, to;
+      var fin = function (good) { if (done) return; done = true; clearTimeout(to); (good && ok()) ? res() : next(); };
+      to = setTimeout(function () { fin(false); }, 8000);
+      loadJs(u).then(function () { fin(true); }, function () { fin(false); });
     };
-    tick();
+    next();
+  });
+}
+var JSQR_SRC = [
+  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js',
+  'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js',
+  'jsQR.min.js' // cadangan lokal: taruh file jsQR.min.js di folder yang sama dengan index.html
+];
+function qrLoop(v) {
+  var found = function (text) {
+    if (!CAM.s || !/^PRS\|/.test(String(text || ''))) return false;
+    P.bc = {text: text, t: Date.now()}; camClose(); presDash(); toast('Barcode terbaca.'); return true;
   };
-  window.jsQR ? go() : loadJs('https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js').then(go, function () { camClose(); toast('Gagal memuat pemindai. Periksa internet.', 1); });
+  /* cara 2: jsQR (dimuat dari internet, dengan beberapa sumber cadangan) */
+  var useJsQR = function () {
+    loadJsAny(JSQR_SRC, function () { return !!window.jsQR; }).then(function () {
+      if (!CAM.s) return;
+      var c = document.createElement('canvas'), x = c.getContext('2d', {willReadFrequently: true});
+      var tick = function () {
+        if (!CAM.s) return;
+        if (v.videoWidth) {
+          var k = Math.min(1, 480 / v.videoWidth); c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
+          x.drawImage(v, 0, 0, c.width, c.height);
+          var r = jsQR(x.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
+          if (r && found(r.data)) return;
+        }
+        CAM.raf = requestAnimationFrame(tick);
+      };
+      tick();
+    }, function () { camClose(); toast('Gagal memuat pemindai. Periksa internet lalu coba lagi.', 1); });
+  };
+  /* cara 1: pemindai bawaan Chrome (BarcodeDetector) - tanpa internet, lebih cepat */
+  var det = null;
+  try { if (window.BarcodeDetector) det = new BarcodeDetector({formats: ['qr_code']}); } catch (e) { det = null; }
+  if (!det) return useJsQR();
+  var tick = function () {
+    if (!CAM.s) return;
+    if (!v.videoWidth) { CAM.raf = requestAnimationFrame(tick); return; }
+    det.detect(v).then(function (a) {
+      if (!CAM.s) return;
+      for (var i = 0; i < a.length; i++) if (found(a[i].rawValue)) return;
+      CAM.raf = requestAnimationFrame(tick);
+    }).catch(function () { det = null; useJsQR(); });
+  };
+  tick();
 }
 function gpsCheck() {
   if (!navigator.geolocation) { toast('Browser tidak mendukung lokasi.', 1); return; }
@@ -1056,7 +1098,7 @@ function presBarcode() {
 }
 function qrRefresh() {
   if (!$('#pqr')) { clearInterval(P.qt); return; }
-  Promise.all([pApi('pBarcode'), window.QRCode ? 1 : loadJs('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js')]).then(function (a) {
+  Promise.all([pApi('pBarcode'), loadJsAny(['https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js', 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js', 'https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js', 'qrcode.min.js'], function () { return !!window.QRCode; })]).then(function (a) {
     var el = $('#pqr'); if (!el) return; el.innerHTML = '';
     new QRCode(el, {text: a[0].text, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M});
   }).catch(function (e) { if (/Sesi/.test(msg(e))) { clearInterval(P.qt); ptok(null); presLogin(msg(e)); } });
