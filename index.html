@@ -628,7 +628,7 @@ function card(p) {
 function svcCard(v, i) {
   var g = im(v.gambar), n = '<div class="n">' + (i + 1) + '</div>' + (g ? '<img class="sph" src="' + esc(g) + '" alt="" loading="lazy">' : '') +
     '<strong>' + esc(v.judul) + '</strong>' + (v.ringkasan ? '<p>' + esc(v.ringkasan) + '</p>' : '');
-  return v.detail ? '<a class="sc" href="#" data-svc="' + esc(v.id) + '">' + n + '<span class="more">Selengkapnya</span></a>' : '<div class="sc">' + n + '</div>';
+  return v.id ? '<a class="sc" href="#" data-svc="' + esc(v.id) + '">' + n + '<span class="more">Selengkapnya</span></a>' : '<div class="sc">' + n + '</div>';
 }
 /* cadangan: bila server belum diperbarui, daftar layanan lama (satu per baris: Judul | Keterangan) tetap tampil */
 function svcLegacy(s) {
@@ -764,7 +764,7 @@ function prefetch() {
   S.pf = 1;
   var q = [['posts', {}, 'posts']];
   S.latest.forEach(function (p) { q.push(['post', {id: p.id}, 'post_' + p.id]); });
-  (S.svc || []).forEach(function (v) { if (v.detail) q.push(['svc', {id: v.id}, 'svc_' + v.id]); });
+  (S.svc || []).forEach(function (v) { if (v.id) q.push(['svc', {id: v.id}, 'svc_' + v.id]); });
   S.tabs.forEach(function (t) { if (t.tipe === 'teks' || t.tipe === 'html') q.push(['tab', {id: t.id}, 'tab_' + t.id]); });
   (function next() {
     var x = q.shift(); if (!x) return;
@@ -1253,7 +1253,7 @@ function secSvc() {
     return '<div class="ph2"><h2>' + (e.id ? 'Ubah layanan' : 'Layanan baru') + '</h2></div><form data-form="svc"><input type="hidden" name="id" value="' + esc(e.id) + '">' +
       fld(['judul', 'Jenis layanan', 'text', 'Contoh: Service Laptop.'], e.judul) + fld(['ringkasan', 'Keterangan layanan (tampil di kartu)', 'textarea', 'Maksimal sekitar 2 kalimat.', 2], e.ringkasan) +
       richField(e.isi, 'Penjelasan lengkap (opsional)') +
-      '<small style="display:block;margin:-8px 0 16px;color:var(--mut)">Isi bila kartu perlu dibuka seperti postingan (muncul tulisan “Selengkapnya”). Kosongkan bila cukup dengan keterangan di kartu.</small>' +
+      '<small style="display:block;margin:-8px 0 16px;color:var(--mut)">Tampil saat kartu diklik, seperti halaman postingan. Jika dikosongkan, halaman layanan hanya menampilkan gambar dan keterangan layanan.</small>' +
       fld(['gambar', 'Gambar (opsional, tampil di kartu & bagian atas halaman layanan)', 'img'], e.gambar) +
       fld(['urutan', 'Nomor urut tampil', 'number', 'Layanan paling kecil tampil paling awal. Kosongkan untuk ditaruh di urutan terakhir.'], e.urutan) +
       fld(['tanggal', 'Tanggal terbit', 'date', 'Isi tanggal mendatang untuk menjadwalkan: layanan tampil otomatis pada tanggal itu (bisa tertunda beberapa menit karena cache). Status Draf selalu disembunyikan.'], e.tanggal) +
