@@ -1003,6 +1003,7 @@ function presDash() {
   $('#view').innerHTML = '<div class="wrap"><div class="pg"><div class="phd"><small>' + esc(fd(d.tanggal)) + '</small><b>' + esc(d.nama) + '</b>' + (d.sekolah ? '<small>' + esc(d.sekolah) + '</small>' : '') +
     '<div class="pclk" id="pclk"></div></div>' + sel +
     ((lk || done) ? '' : '<div class="pc"><h3>Langkah presensi</h3>' + st + '</div>') + '<div>' + aksi + '</div>' +
+    '<div class="pc"><h3>Nilai presensi bulan ini</h3>' + (d.nilai == null ? '<p class="meta">Belum ada data presensi bulan ini.</p>' : '<div style="display:flex;align-items:baseline;gap:10px"><b style="font-size:34px;line-height:1">' + esc(d.nilai) + '</b><b style="font-size:20px">Predikat ' + esc(d.pred) + '</b></div><p class="meta" style="margin:6px 0 0">Dari ' + d.nilai_hari + ' hari kegiatan · Hadir ' + d.nilai_h + ' · Terlambat ' + d.nilai_t + ' · Izin ' + d.nilai_i + ' · Sakit ' + d.nilai_s + ' · Alpa ' + d.nilai_a + '</p>') + '</div>' +
     '<div class="pc"><h3>Riwayat terakhir</h3>' + (d.riwayat.length ? d.riwayat.map(function (x) {
       return '<div class="li"><div><b>' + esc(fd(x.tanggal)) + '</b><span class="meta">' + esc(stL(x.status || '')) + '</span></div><span>' + jam(x.masuk) + '</span></div>';
     }).join('') : '<p class="meta">Belum ada riwayat.</p>') + '</div><button class="bt" data-pa="keluar">Keluar</button></div></div>';
@@ -1517,13 +1518,14 @@ function presBln_() {
   for (var y = Math.min(yr - 2, p.year); y <= Math.max(yr + 1, p.year); y++) ys += '<option' + (y === p.year ? ' selected' : '') + '>' + y + '</option>';
   var rows = p.siswa.map(function (s, n) {
     ['h', 't', 'i', 's', 'a'].forEach(function (k) { tot[k] += s[k]; });
-    return '<tr data-k="' + esc(s.kode) + '"' + (A.hl === s.kode ? ' class="hl"' : '') + '><td>' + (n + 1) + '</td><td class="pnm" data-act="hl" data-id="' + esc(s.kode) + '" title="Klik untuk menyorot baris ini"><b>' + esc(s.nama) + '</b>' + (s.sekolah ? '<br><span class="meta">' + esc(s.sekolah) + '</span>' : '') + '</td><td class="ptot cH">' + s.h + '</td><td class="ptot cT">' + s.t + '</td><td class="ptot cI">' + s.i + '</td><td class="ptot cS">' + s.s + '</td><td class="ptot cA">' + s.a + '</td></tr>';
+    return '<tr data-k="' + esc(s.kode) + '"' + (A.hl === s.kode ? ' class="hl"' : '') + '><td>' + (n + 1) + '</td><td class="pnm" data-act="hl" data-id="' + esc(s.kode) + '" title="Klik untuk menyorot baris ini"><b>' + esc(s.nama) + '</b>' + (s.sekolah ? '<br><span class="meta">' + esc(s.sekolah) + '</span>' : '') + '</td><td class="ptot cH">' + s.h + '</td><td class="ptot cT">' + s.t + '</td><td class="ptot cI">' + s.i + '</td><td class="ptot cS">' + s.s + '</td><td class="ptot cA">' + s.a + '</td><td class="ptot">' + (s.nilai == null ? '–' : s.nilai) + '</td><td class="ptot">' + (s.pred || '–') + '</td></tr>';
   }).join('');
+  var nv = p.siswa.filter(function (x) { return x.nilai != null; }), avg = nv.length ? Math.round(nv.reduce(function (a, x) { return a + x.nilai; }, 0) / nv.length * 10) / 10 : null;
   return '<form data-form="prg" class="szr" style="margin-bottom:12px"><select name="bulan" aria-label="Bulan">' + BLN.map(function (n, i) { return '<option value="' + (i + 1) + '"' + (i + 1 === p.month ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select><select name="tahun" aria-label="Tahun">' + ys + '</select><button class="bt" type="submit">Tampilkan</button></form>' +
     '<h3 style="margin:8px 0 4px">Rekap bulanan · ' + BLN[p.month - 1] + ' ' + p.year + '</h3>' +
-    '<p class="meta">Total status tiap siswa. H = Hadir · T = Terlambat · I = Izin · S = Sakit · A = Alpa (otomatis untuk hari kerja yang lewat tanpa catatan).</p><div class="hint">' + HLI + '<span>Klik <b>nama siswa</b> untuk menyorot barisnya. Klik lagi untuk melepas sorotan.</span></div>' +
-    '<div class="ptw"><table class="ptb"><thead><tr><th>No</th><th class="pnm">Nama Siswa</th><th class="ptot cH">H</th><th class="ptot cT">T</th><th class="ptot cI">I</th><th class="ptot cS">S</th><th class="ptot cA">A</th></tr></thead><tbody>' +
-    (rows ? rows + '<tr><td></td><td class="pnm"><b>Total</b></td><td class="ptot cH">' + tot.h + '</td><td class="ptot cT">' + tot.t + '</td><td class="ptot cI">' + tot.i + '</td><td class="ptot cS">' + tot.s + '</td><td class="ptot cA">' + tot.a + '</td></tr>' : '<tr><td colspan="7">Belum ada data siswa.</td></tr>') + '</tbody></table></div>';
+    '<p class="meta">Total status tiap siswa. H = Hadir · T = Terlambat · I = Izin · S = Sakit · A = Alpa (otomatis untuk hari kerja yang lewat tanpa catatan). Hanya hari yang ada presensinya (minimal satu siswa) yang dihitung: <b>' + (p.hariAktif || 0) + ' hari</b> bulan ini. Nilai = rata-rata poin per hari (poin diatur di Pengaturan presensi).</p><div class="hint">' + HLI + '<span>Klik <b>nama siswa</b> untuk menyorot barisnya. Klik lagi untuk melepas sorotan.</span></div>' +
+    '<div class="ptw"><table class="ptb"><thead><tr><th>No</th><th class="pnm">Nama Siswa</th><th class="ptot cH">H</th><th class="ptot cT">T</th><th class="ptot cI">I</th><th class="ptot cS">S</th><th class="ptot cA">A</th><th class="ptot">Nilai</th><th class="ptot">Pred.</th></tr></thead><tbody>' +
+    (rows ? rows + '<tr><td></td><td class="pnm"><b>Total</b></td><td class="ptot cH">' + tot.h + '</td><td class="ptot cT">' + tot.t + '</td><td class="ptot cI">' + tot.i + '</td><td class="ptot cS">' + tot.s + '</td><td class="ptot cA">' + tot.a + '</td><td class="ptot">' + (avg == null ? '–' : avg) + '</td><td class="ptot"></td></tr>' : '<tr><td colspan="9">Belum ada data siswa.</td></tr>') + '</tbody></table></div>';
 }
 function presSet_() {
   var p = A.p, st = A.d.settings;
@@ -1531,6 +1533,10 @@ function presSet_() {
     fld(['presensi_jam_masuk', 'Jam masuk gelombang 1', 'time'], st.presensi_jam_masuk) + fld(['presensi_jam_masuk2', 'Jam masuk gelombang 2', 'time'], st.presensi_jam_masuk2) +
     fld(['presensi_akhir1', 'Batas akhir gelombang 1', 'time', 'Lewat jam ini siswa otomatis masuk gelombang 2. Datang sebelum jam masuk = Hadir (Terlalu cepat); lewat toleransi = Hadir (Terlambat).'], st.presensi_akhir1) + fld(['presensi_akhir2', 'Batas akhir gelombang 2', 'time', 'Lewat jam ini presensi masuk ditutup.'], st.presensi_akhir2) +
     fld(['presensi_toleransi', 'Toleransi keterlambatan (menit)', 'number'], st.presensi_toleransi) +
+    '<h3 style="margin:14px 0 4px">Penilaian presensi</h3><p class="meta">Nilai bulanan = rata-rata poin semua hari yang dihitung (hari tanpa satu pun presensi tidak dihitung). Isi 0–100.</p>' +
+    fld(['presensi_poin_h', 'Poin Hadir (termasuk Terlalu cepat)', 'number'], st.presensi_poin_h) + fld(['presensi_poin_t', 'Poin Hadir (Terlambat)', 'number'], st.presensi_poin_t) +
+    fld(['presensi_poin_s', 'Poin Sakit', 'number'], st.presensi_poin_s) + fld(['presensi_poin_i', 'Poin Izin', 'number'], st.presensi_poin_i) + fld(['presensi_poin_a', 'Poin Alpa', 'number'], st.presensi_poin_a) +
+    fld(['presensi_batas_a', 'Nilai minimal predikat A', 'number'], st.presensi_batas_a) + fld(['presensi_batas_b', 'Nilai minimal predikat B', 'number'], st.presensi_batas_b) + fld(['presensi_batas_c', 'Nilai minimal predikat C (di bawahnya D)', 'number'], st.presensi_batas_c) +
     '<div class="fg"><label for="f_h6">Hari kerja</label><select id="f_h6" name="presensi_hari6"><option value="tidak"' + (st.presensi_hari6 !== 'ya' ? ' selected' : '') + '>Senin – Jumat</option><option value="ya"' + (st.presensi_hari6 === 'ya' ? ' selected' : '') + '>Senin – Sabtu</option></select><small>Hari di luar ini tidak dihitung Alpa di Rekap Harian.</small></div>' +
     fld(['presensi_libur', 'Tanggal libur', 'text', 'Format 2026-12-25, pisahkan dengan koma. Tidak dihitung Alpa.'], st.presensi_libur) +
     fld(['presensi_radius', 'Radius lokasi (meter)', 'number', '0 = tanpa pembatasan lokasi. Jika diisi, siswa hanya bisa presensi Hadir dalam radius ini dari koordinat di bawah (HP harus mengizinkan lokasi).'], st.presensi_radius) +
@@ -1548,19 +1554,19 @@ function presRek_() {
   p.off.forEach(function (x) { off[x] = 1; });
   var head = '<tr><th>No</th><th class="pnm">Nama Siswa</th>';
   for (d = 1; d <= p.days; d++) head += '<th class="pdc' + (off[d] ? ' off' : '') + '">' + d + '</th>';
-  head += '<th class="ptot cH">H</th><th class="ptot cT">T</th><th class="ptot cI">I</th><th class="ptot cS">S</th><th class="ptot cA">A</th></tr>';
+  head += '<th class="ptot cH">H</th><th class="ptot cT">T</th><th class="ptot cI">I</th><th class="ptot cS">S</th><th class="ptot cA">A</th><th class="ptot">Nilai</th><th class="ptot">Pred.</th></tr>';
   var body = p.siswa.map(function (s, n) {
     var tr = '<tr data-k="' + esc(s.kode) + '"' + (A.hl === s.kode ? ' class="hl"' : '') + '><td>' + (n + 1) + '</td><td class="pnm" data-act="hl" data-id="' + esc(s.kode) + '" title="Klik untuk menyorot baris ini"><b>' + esc(s.nama) + '</b></td>';
     for (d = 1; d <= p.days; d++) {
       var k = pre + ('0' + d).slice(-2), v = s.daily[k] || '';
       tr += '<td class="pdc' + (off[d] ? ' off' : '') + '" data-act="cell" data-id="' + esc(s.kode + '|' + k) + '"><span class="c' + v + '">' + v + '</span></td>';
     }
-    return tr + '<td class="ptot cH">' + s.h + '</td><td class="ptot cT">' + s.t + '</td><td class="ptot cI">' + s.i + '</td><td class="ptot cS">' + s.s + '</td><td class="ptot cA">' + s.a + '</td></tr>';
+    return tr + '<td class="ptot cH">' + s.h + '</td><td class="ptot cT">' + s.t + '</td><td class="ptot cI">' + s.i + '</td><td class="ptot cS">' + s.s + '</td><td class="ptot cA">' + s.a + '</td><td class="ptot">' + (s.nilai == null ? '–' : s.nilai) + '</td><td class="ptot">' + (s.pred || '–') + '</td></tr>';
   }).join('');
   return '<form data-form="prg" class="szr" style="margin-bottom:12px"><select name="bulan" aria-label="Bulan">' + BLN.map(function (n, i) { return '<option value="' + (i + 1) + '"' + (i + 1 === p.month ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select><select name="tahun" aria-label="Tahun">' + ys + '</select><button class="bt" type="submit">Tampilkan</button></form>' +
     '<div class="acts" style="margin-bottom:12px"><button class="bt" data-act="xls">Unduh Excel</button><button class="bt" data-act="pdf">Unduh PDF</button><button class="btn sm" data-act="newrp">Catatan manual</button></div>' +
     '<p class="meta">H = Hadir · T = Terlambat · I = Izin · S = Sakit · A = Alpa. Klik sebuah tanggal untuk melihat detail, foto, dan lokasi.</p><div class="hint">' + HLI + '<span>Klik <b>nama siswa</b> untuk menyorot barisnya agar mudah dibaca ke samping. Klik lagi untuk melepas sorotan.</span></div>' + (A.sel ? presDet_() : '') +
-    '<div class="ptw"><table class="ptb"><thead>' + head + '</thead><tbody>' + (body || '<tr><td colspan="' + (p.days + 7) + '">Belum ada data siswa.</td></tr>') + '</tbody></table></div>';
+    '<div class="ptw"><table class="ptb"><thead>' + head + '</thead><tbody>' + (body || '<tr><td colspan="' + (p.days + 9) + '">Belum ada data siswa.</td></tr>') + '</tbody></table></div>';
 }
 function presDet_() {
   var p = A.p, q = A.sel.split('|'), s = p.siswa.filter(function (x) { return x.kode === q[0]; })[0] || {nama: q[0], daily: {}};
@@ -1649,17 +1655,17 @@ function presData_() {
   return {
     p: p, days: days, periode: BLN[p.month - 1] + ' ' + p.year, judul: 'Rekap Harian Presensi Prakerin',
     fn: 'rekap_harian_' + p.year + '-' + ('0' + p.month).slice(-2),
-    rows: p.siswa.map(function (s, n) { return {no: n + 1, nama: s.nama, sekolah: s.sekolah, daily: days.map(function (x) { return s.daily[pre + ('0' + x).slice(-2)] || ''; }), tot: [s.h, s.t, s.i, s.s, s.a]}; })
+    rows: p.siswa.map(function (s, n) { return {no: n + 1, nama: s.nama, sekolah: s.sekolah, daily: days.map(function (x) { return s.daily[pre + ('0' + x).slice(-2)] || ''; }), tot: [s.h, s.t, s.i, s.s, s.a, s.nilai == null ? '' : s.nilai, s.pred || '']}; })
   };
 }
 function presXls() {
   toast('Menyiapkan Excel…');
   (window.XLSX ? Promise.resolve() : loadJs('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js')).then(function () {
-    var x = presData_(), hd = ['No', 'Nama', 'Sekolah'].concat(x.days, ['H', 'T', 'I', 'S', 'A']);
+    var x = presData_(), hd = ['No', 'Nama', 'Sekolah'].concat(x.days, ['H', 'T', 'I', 'S', 'A', 'Nilai', 'Predikat']);
     var aoa = [[x.judul], ['Periode: ' + x.periode], ['H = Hadir, T = Terlambat, I = Izin, S = Sakit, A = Alpa'], [], hd];
     x.rows.forEach(function (r) { aoa.push([r.no, r.nama, r.sekolah].concat(r.daily, r.tot)); });
     var ws = XLSX.utils.aoa_to_sheet(aoa), wb = XLSX.utils.book_new();
-    ws['!cols'] = [{wch: 4}, {wch: 26}, {wch: 24}].concat(x.days.map(function () { return {wch: 3.5}; }), [{wch: 5}, {wch: 5}, {wch: 5}, {wch: 5}, {wch: 5}]);
+    ws['!cols'] = [{wch: 4}, {wch: 26}, {wch: 24}].concat(x.days.map(function () { return {wch: 3.5}; }), [{wch: 5}, {wch: 5}, {wch: 5}, {wch: 5}, {wch: 5}, {wch: 7}, {wch: 9}]);
     XLSX.utils.book_append_sheet(wb, ws, x.periode);
     XLSX.writeFile(wb, x.fn + '.xlsx');
   }).catch(function () { toast('Gagal membuat Excel. Periksa koneksi internet.', 1); });
@@ -1672,7 +1678,7 @@ function presPdf() {
     var doc = new window.jspdf.jsPDF({orientation: 'landscape', unit: 'mm', format: 'a4'});
     doc.setFontSize(14); doc.text(x.judul, 10, 13); doc.setFontSize(10); doc.text('Periode: ' + x.periode, 10, 19);
     doc.autoTable({
-      head: [['No', 'Nama Siswa'].concat(x.days, ['H', 'T', 'I', 'S', 'A'])],
+      head: [['No', 'Nama Siswa'].concat(x.days, ['H', 'T', 'I', 'S', 'A', 'Nilai', 'Pred.'])],
       body: x.rows.map(function (r) { return [r.no, r.nama].concat(r.daily, r.tot); }),
       startY: 23, theme: 'grid', margin: {left: 10, right: 10},
       styles: {fontSize: 6.5, cellPadding: 0.9, halign: 'center', lineColor: [200, 210, 214], lineWidth: 0.1},
