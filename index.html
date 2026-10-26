@@ -358,6 +358,44 @@ input:focus,select:focus,textarea:focus{border-color:var(--pt)!important;box-sha
 .pc{box-shadow:0 8px 24px -18px rgba(0,0,0,.4)}
 .hint{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--mut);background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:8px 12px;margin-bottom:12px}
 .hint svg{flex:none;margin-top:2px;color:var(--a)}
+/* ===================== rev.26: tampilan utama lebih hidup (hover kartu, judul, tombol) ===================== */
+.card,.sc{position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.2,.8,.3,1),box-shadow .22s ease,border-color .2s ease,background-color .22s ease}
+.card::before,.sc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--a);transform:scaleY(0);transform-origin:top;transition:transform .25s ease}
+.card .ph{transition:transform .35s ease,box-shadow .25s ease}
+.card h3{transition:color .2s ease}
+.more::after{content:"\2192";display:inline-block;margin-left:6px;transition:transform .2s ease}
+.sc .n{transition:transform .25s cubic-bezier(.2,.8,.3,1.4),background-color .2s ease}
+/* hover hanya di perangkat yang punya kursor (di HP pakai efek tekan) */
+@media(hover:hover){
+  .card:hover,.sc:hover{transform:translateY(-4px);border-color:var(--pt);background:var(--kc,var(--card));background:color-mix(in srgb,var(--p) 10%,var(--kc,var(--card)));box-shadow:0 18px 32px -18px var(--p),0 4px 10px -6px rgba(0,0,0,.25)}
+  .card:hover::before,.sc:hover::before{transform:scaleY(1)}
+  .card:hover h3{color:var(--pt)}
+  .card:hover .ph{transform:scale(1.05);box-shadow:0 8px 16px -8px rgba(0,0,0,.4)}
+  .card:hover .more::after{transform:translateX(5px)}
+  .card:hover .more{text-decoration:underline;text-underline-offset:3px}
+  .sc:hover .n{transform:scale(1.12) rotate(-6deg);background:var(--a)}
+}
+.card:active,.sc:active{transform:scale(.985)}
+.card:focus-visible{border-color:var(--pt);box-shadow:0 0 0 3px color-mix(in srgb,var(--a) 35%,transparent)}
+.card:focus-visible::before{transform:scaleY(1)}
+/* judul bagian: garis aksen di kiri */
+.sh h2,.sec h2{position:relative;padding-left:14px}
+.sh h2::before,.sec h2::before{content:"";position:absolute;left:0;top:.18em;bottom:.18em;width:5px;border-radius:4px;background:linear-gradient(180deg,var(--a),var(--p))}
+/* gambar utama & tombol */
+.hero img{box-shadow:0 20px 40px -22px rgba(0,0,0,.5);transition:transform .35s ease,box-shadow .35s ease}
+.btn{transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+@media(hover:hover){
+  .hero img:hover{transform:translateY(-3px)}
+  .btn:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 12px 20px -12px var(--p)}
+  .hero .btn:hover{box-shadow:0 12px 20px -12px var(--a)}
+  .btn.ghost:hover,.hero .btn.ghost:hover{background:var(--p);color:#fff}
+}
+.btn:active{transform:scale(.97)}
+/* kotak ajakan (CTA) dengan gradasi halus */
+.cta{background:linear-gradient(135deg,var(--p),color-mix(in srgb,var(--p) 72%,#000));box-shadow:0 18px 36px -22px var(--p)}
+/* label kecil & info */
+.kick{border:1px solid color-mix(in srgb,var(--p) 25%,transparent)}
+[data-theme=dark] .kick{background:color-mix(in srgb,var(--p) 30%,var(--card));color:#fff}
 </style>
 </head>
 <body>
