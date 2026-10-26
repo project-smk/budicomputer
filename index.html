@@ -112,6 +112,10 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
 .pane{max-width:760px}
 .ph2{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
 .ph2 h2{font-size:22px}
+.sbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.sbox>h3{font-size:16px;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.sbox>.fg:last-child{margin-bottom:0}
+@media(max-width:639px){.sbox{padding:14px}}
 .li{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;flex-wrap:wrap}
 .li>div:first-child{min-width:0;display:flex;flex-direction:column}
 .acts{display:flex;gap:6px;flex-wrap:wrap}
@@ -1169,7 +1173,25 @@ function adminDraw(soft) {
 }
 function secSet() {
   var s = A.d.settings;
-  return '<div class="ph2"><h2>Identitas & tampilan</h2></div><form data-form="set">' + FIELDS.map(function (f) { return fld(f, s[f[0]]); }).join('') + '<button class="btn" type="submit">Simpan perubahan</button></form>';
+  var G = [
+    ['Identitas situs', ['judul_halaman', 'nama_usaha', 'logo_url', 'logo_size']],
+    ['Bagian atas beranda', ['label_atas', 'tagline', 'deskripsi', 'hero_image', 'info_bar']],
+    ['Tombol & WhatsApp', ['tombol_teks', 'tombol_link', 'pesan_wa']],
+    ['Bagian layanan', ['judul_layanan', 'jumlah_layanan']],
+    ['Bagian postingan', ['judul_postingan', 'jumlah_postingan']],
+    ['Kotak kontak (bawah beranda)', ['judul_kontak', 'kontak_teks']],
+    ['Footer', ['footer_kiri', 'footer_kanan']],
+    ['Warna & kartu', ['warna_utama', 'warna_aksen', 'warna_kartu', 'warna_kartu_gelap', 'gelap_kartu']],
+    ['Penyimpanan gambar', ['folder_gambar']]
+  ], used = {};
+  G.forEach(function (g) { g[1].forEach(function (k) { used[k] = 1; }); });
+  var rest = FIELDS.filter(function (f) { return !used[f[0]]; });
+  if (rest.length) G.push(['Lainnya', rest.map(function (f) { return f[0]; })]);
+  return '<div class="ph2"><h2>Identitas & tampilan</h2></div><form data-form="set">' + G.map(function (g) {
+    return '<section class="sbox"><h3>' + g[0] + '</h3>' + g[1].map(function (k) {
+      var f = FIELDS.filter(function (x) { return x[0] === k; })[0]; return f ? fld(f, s[k]) : '';
+    }).join('') + '</section>';
+  }).join('') + '<button class="btn" type="submit">Simpan perubahan</button></form>';
 }
 function aIco(t) {
   var L = {kiri: [[4, 20], [4, 14], [4, 20], [4, 12]], tengah: [[4, 20], [7, 17], [4, 20], [8, 16]], kanan: [[4, 20], [10, 20], [4, 20], [12, 20]], rata: [[4, 20], [4, 20], [4, 20], [4, 20]]}[t];
