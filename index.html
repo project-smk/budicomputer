@@ -409,6 +409,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--pt)!important;box-sha
 /* label kecil & info */
 .kick{border:1px solid color-mix(in srgb,var(--p) 25%,transparent)}
 [data-theme=dark] .kick{background:color-mix(in srgb,var(--p) 30%,var(--card));color:#fff}
+/* ===== Lembar "Layanan Kami" di HP: lebih tinggi & kartu ringkas agar semua layanan terlihat ===== */
+.sheet .sp{max-height:92vh;max-height:92dvh;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.sheet .sph{position:sticky;top:0;z-index:1;background:var(--card);margin:0 0 8px;padding:2px 0 8px}
+.sheet .svc{gap:8px}
+.sheet .sc{display:grid;grid-template-columns:28px 1fr;column-gap:12px;align-items:start;padding:12px 14px}
+.sheet .sc .n{grid-column:1;grid-row:span 4;margin:0}
+.sheet .sc>strong,.sheet .sc>p,.sheet .sc>.more{grid-column:2}
+.sheet .sc>strong{font-size:15px;line-height:1.3}
+.sheet .sc>p{margin:2px 0 0}
+.sheet .sc>.more{margin-top:4px;justify-self:start}
+.sheet .sc img.sph{order:-1;grid-column:1/-1;height:96px;margin-bottom:10px}
 /* ===== Tombol Instal Aplikasi (hilang-timbul) ===== */
 #pwa{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;pointer-events:none}
 #pwa[hidden]{display:none}
