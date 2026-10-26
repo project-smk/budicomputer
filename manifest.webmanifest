@@ -1,13 +1,13 @@
 {
   "id": "profil-usaha-b",
-  "name": "Profil Usaha",
-  "short_name": "Profil Usaha",
-  "description": "Web Profil Usaha",
+  "name": "Budi Computer",
+  "short_name": "Budi Computer",
+  "description": "Budi Computer",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F4F7F8",
-  "theme_color": "#0F4C5C",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "lang": "id",
   "icons": [
     {
@@ -21,12 +21,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDe9GDtT8FV08iVmLcmqOn_xocE-bhY6Be78iNFq8Y_CGQtnlxXmOngnHjGqHsE4Lffgy4gKGA4MawDftRselAbk5oCNFZoXr8TRTp8vTKHIPMbveqFSgtSjlaBgclRi_qU9NJVBnw4aSpLQ08rHdyJbjfzYhnuez7mafH4RF5FwJ8XulcSiNICmhYwtLK/s512/BUDI%20KOMPUTER.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ]
 }
