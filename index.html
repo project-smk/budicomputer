@@ -3,10 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Profil Usaha</title>
-<script>try{var m=localStorage.getItem('wp_theme');document.documentElement.dataset.theme=m==='dark'?'dark':'light';}catch(e){}</script>
+<title>Budi Computer</title>
+<script>try{var m=localStorage.getItem('pusaha_theme');document.documentElement.dataset.theme=m==='dark'?'dark':'light';}catch(e){}</script>
 <link rel="icon" type="image/png" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDe9GDtT8FV08iVmLcmqOn_xocE-bhY6Be78iNFq8Y_CGQtnlxXmOngnHjGqHsE4Lffgy4gKGA4MawDftRselAbk5oCNFZoXr8TRTp8vTKHIPMbveqFSgtSjlaBgclRi_qU9NJVBnw4aSpLQ08rHdyJbjfzYhnuez7mafH4RF5FwJ8XulcSiNICmhYwtLK/s320/BUDI%20KOMPUTER.png">
 <link rel="manifest" href="manifest.webmanifest">
+<meta name="application-name" content="Budi Computer">
+<meta name="apple-mobile-web-app-title" content="Budi Computer">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0F4C5C">
 <link rel="apple-touch-icon" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDe9GDtT8FV08iVmLcmqOn_xocE-bhY6Be78iNFq8Y_CGQtnlxXmOngnHjGqHsE4Lffgy4gKGA4MawDftRselAbk5oCNFZoXr8TRTp8vTKHIPMbveqFSgtSjlaBgclRi_qU9NJVBnw4aSpLQ08rHdyJbjfzYhnuez7mafH4RF5FwJ8XulcSiNICmhYwtLK/s320/BUDI%20KOMPUTER.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -454,10 +457,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--pt)!important;box-sha
 /* ===== PENGATURAN: tempel URL web app Apps Script Anda di sini ===== */
 var API_URL = 'https://script.google.com/macros/s/AKfycbz-Y9D54MLNd9W26HtTBMSCXbaKuOZhlrGF8EkUZA-5rmXQloWbXLA_u804yXCdYCg3/exec';   // contoh: https://script.google.com/macros/s/AKfy.../exec
 /* =================================================================== */
-var CK = 'wp_pub_v1';
+var CK = 'pusaha_pub_v1';
 var S = {s: {}, tabs: [], latest: [], total: 0, cur: {t: 'home'}, token: null};
-try { S.token = sessionStorage.getItem('wp_tok'); } catch (e) {}
-function tok(t) { S.token = t; try { t ? sessionStorage.setItem('wp_tok', t) : sessionStorage.removeItem('wp_tok'); } catch (e) {} }
+try { S.token = sessionStorage.getItem('pusaha_tok'); } catch (e) {}
+function tok(t) { S.token = t; try { t ? sessionStorage.setItem('pusaha_tok', t) : sessionStorage.removeItem('pusaha_tok'); } catch (e) {} }
 var A = {sec: 'set', ed: null, d: null, ts: {}, busy: {}, dirty: false, hl: null};
 var HZ = {nama_usaha: [12, 28, 18, '.brand'], tagline: [14, 48, 24, '.hero h1'], judul_postingan: [14, 40, 22, '.sh h2.jp']}; // ukuran khusus HP
 var SZ = {
@@ -616,7 +619,7 @@ function theme() {
   var pu = ok.test(s.warna_utama) ? s.warna_utama : '#0F4C5C', ak = ok.test(s.warna_aksen) ? s.warna_aksen : '#B45309', dk = isDark();
   r.setProperty('--p', pu); r.setProperty('--a', dk ? mix(ak, .5) : ak); r.setProperty('--pt', dk ? mix(pu, .55) : pu);
   cardTheme(s, dk);
-  document.title = s.judul_halaman || s.nama_usaha || 'Profil Usaha';
+  document.title = s.judul_halaman || s.nama_usaha || 'Budi Computer';
   $('#brandName').textContent = s.nama_usaha || '';
   var l = im(s.logo_url);
   $('#logo').innerHTML = l ? '<img class="logo" src="' + esc(l) + '" alt="">' : '<span class="logo">' + esc((s.nama_usaha || 'N').charAt(0).toUpperCase()) + '</span>';
@@ -758,20 +761,20 @@ var MC = {};
 var CTL = 3 * 24 * 3600 * 1000; // cache perangkat kedaluwarsa setelah 3 hari
 function cget(k) {
   try {
-    var o = JSON.parse(localStorage.getItem('wp_c_' + k));
+    var o = JSON.parse(localStorage.getItem('pusaha_c_' + k));
     if (o && o.__c) return Date.now() - o.t < CTL ? o.d : null;
     return o;
   } catch (e) { return null; }
 }
 function cput(k, d) {
   MC[k] = d;
-  try { localStorage.setItem('wp_c_' + k, JSON.stringify({__c: 1, t: Date.now(), d: d})); }
-  catch (e) { try { Object.keys(localStorage).forEach(function (x) { if (x.indexOf('wp_c_') === 0) localStorage.removeItem(x); }); } catch (e2) {} }
+  try { localStorage.setItem('pusaha_c_' + k, JSON.stringify({__c: 1, t: Date.now(), d: d})); }
+  catch (e) { try { Object.keys(localStorage).forEach(function (x) { if (x.indexOf('pusaha_c_') === 0) localStorage.removeItem(x); }); } catch (e2) {} }
 }
 /* dipanggil setelah admin menyimpan/menghapus: semua cache situs dibuang agar tampilan baru langsung muncul */
 function cclear() {
   MC = {}; S.pf = 0;
-  try { Object.keys(localStorage).forEach(function (x) { if (x.indexOf('wp_c_') === 0) localStorage.removeItem(x); }); localStorage.removeItem(CK); } catch (e) {}
+  try { Object.keys(localStorage).forEach(function (x) { if (x.indexOf('pusaha_c_') === 0) localStorage.removeItem(x); }); localStorage.removeItem(CK); } catch (e) {}
 }
 function swr(action, params, key, ok, bad) {
   var c = MC[key] || cget(key), shown = false;
@@ -860,7 +863,7 @@ $('#nav').addEventListener('click', function (e) {
 });
 function track(k, id) {
   if (S.token) return;
-  var key = 'wp_t_' + k + (id || '');
+  var key = 'pusaha_t_' + k + (id || '');
   try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, 1); } catch (e) {}
   api('track', {k: k, id: id || ''}, 1).catch(function () {});
 }
@@ -872,7 +875,7 @@ function shareNow() {
 }
 $('#btnTheme').addEventListener('click', function () {
   var d = isDark() ? 'light' : 'dark'; document.documentElement.dataset.theme = d;
-  try { localStorage.setItem('wp_theme', d); } catch (e) {}
+  try { localStorage.setItem('pusaha_theme', d); } catch (e) {}
   theme(); if (S.cur.t === 'tab') route(S.cur);
 });
 $('#view').addEventListener('click', function (e) {
@@ -898,8 +901,8 @@ function refreshPublic() {
 
 /* ============ PRESENSI (halaman siswa) ============ */
 var P = {tok: null, d: null, tab: null, sf: null, gps: null, bc: null, qt: 0, gel: null, st: 'Hadir', ket: ''};
-try { P.tok = sessionStorage.getItem('wp_ptok'); } catch (e) {}
-function ptok(t) { P.tok = t; try { t ? sessionStorage.setItem('wp_ptok', t) : sessionStorage.removeItem('wp_ptok'); } catch (e) {} }
+try { P.tok = sessionStorage.getItem('pusaha_ptok'); } catch (e) {}
+function ptok(t) { P.tok = t; try { t ? sessionStorage.setItem('pusaha_ptok', t) : sessionStorage.removeItem('pusaha_ptok'); } catch (e) {} }
 function pApi(a, d) { return api(a, Object.assign({token: P.tok}, d || {})); }
 function jam(s) { return s ? String(s).slice(0, 5) : '–'; }
 function pOn() { return S.cur.t === 'tab' && S.cur.id === P.tab; }
@@ -916,7 +919,7 @@ function presView(t) {
     .catch(function (e) { if (!pOn()) return; if (/Sesi/.test(msg(e))) { ptok(null); presLogin(msg(e)); } else fail(e); });
 }
 function presLogin(err) {
-  var k = ''; try { k = localStorage.getItem('wp_pk') || ''; } catch (e) {}
+  var k = ''; try { k = localStorage.getItem('pusaha_pk') || ''; } catch (e) {}
   $('#view').innerHTML = '<div class="wrap"><div class="pg"><div class="phd"><small>Presensi Prakerin</small><b>Masuk dengan akun siswa</b></div>' +
     '<form class="pc" id="pForm"><div class="fg"><label for="pk">Username</label><input id="pk" value="' + esc(k) + '" autocomplete="username" autocapitalize="off" required></div>' +
     '<div class="fg"><label for="pp">Password</label><input id="pp" type="password" autocomplete="current-password" required></div>' +
@@ -1051,7 +1054,7 @@ $('#view').addEventListener('submit', function (e) {
   if (e.target.id !== 'pForm') return; e.preventDefault();
   var b = e.target.querySelector('button'), k = $('#pk').value.trim(); b.disabled = true; $('#perr').textContent = '';
   api('pLogin', {kode: k, pin: $('#pp').value}).then(function (r) {
-    ptok(r.token); P.d = r.data; presReset(); try { localStorage.setItem('wp_pk', k); } catch (x) {}
+    ptok(r.token); P.d = r.data; presReset(); try { localStorage.setItem('pusaha_pk', k); } catch (x) {}
     if (pOn()) presDash();
   }).catch(function (x) { $('#perr').textContent = /Aksi tidak dikenal/.test(msg(x)) ? 'Server belum diperbarui. Di Apps Script: Deploy > Kelola deployment > Edit > Versi baru.' : msg(x); b.disabled = false; });
 });
@@ -1787,7 +1790,7 @@ function shrink(file) {
 
 var DL = new URLSearchParams(location.search).get('p'), DS = new URLSearchParams(location.search).get('s');
 /* Service worker khusus aplikasi ini (hanya scope folder ini; TIDAK menyentuh aplikasi lain di domain yang sama) */
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { try { navigator.serviceWorker.register('sw.js', {scope: './'}).catch(function () {}); } catch (e) {} }
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { try { navigator.serviceWorker.register('sw.js', {scope: './', updateViaCache: 'none'}).then(function (r) { r.update(); }).catch(function () {}); } catch (e) {} }
 
 /* ===== Tombol Instal Aplikasi: melayang, hilang-timbul, hilang setelah terpasang ===== */
 (function pwaInstall() {
