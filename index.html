@@ -54,6 +54,10 @@ main{flex:1}
 .sc{background:var(--kc,var(--card));color:var(--kt,var(--ink));border:1px solid var(--kl,var(--line));border-radius:12px;padding:14px}
 .sc .n{width:28px;height:28px;border-radius:50%;background:var(--p);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center;margin-bottom:8px}
 .sc strong{display:block;font-size:16px}
+a.sc{display:block;text-decoration:none;cursor:pointer}
+.sc img.sph{display:block;width:100%;height:120px;object-fit:contain;border-radius:8px;background:var(--kl,var(--line));margin-bottom:10px}
+.sc .more{display:inline-block;margin-top:8px}
+.sec .sh h2{margin:0}
 .sc p{margin:4px 0 0;font-size:13px;line-height:1.5;color:var(--km,var(--mut))}
 .card .meta{color:var(--km,var(--mut))}
 .cta{background:var(--p);color:#fff;border-radius:16px;padding:22px 28px;display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:24px 0 24px}
@@ -66,7 +70,7 @@ main{flex:1}
 .posts{padding:20px 0 0}
 .sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .sh h2{font-size:22px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:14px}
 .card{display:flex;flex-direction:row;align-items:flex-start;gap:12px;background:var(--kc,var(--card));color:var(--kt,var(--ink));border:1px solid var(--kl,var(--line));border-radius:12px;padding:12px;color:inherit;text-decoration:none;min-width:0}
 .card:hover{border-color:var(--pt)}
 .ph{width:104px;height:104px;border-radius:8px;background:var(--kl,var(--line));object-fit:contain;display:block;flex:none}
@@ -124,7 +128,7 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
   .hero h1{font-size:30px}
   .hero p{font-size:14px}
   .hero img{max-height:200px}
-  .grid{grid-template-columns:1fr 1fr;gap:12px}
+  .grid{gap:12px}
 }
 /* HP */
 @media(max-width:639px){
@@ -134,7 +138,7 @@ input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--fld)
   .hero h1{font-size:24px}
   .hero p{font-size:14px}
   .hero img{max-height:150px;border-radius:12px}
-  .grid{grid-template-columns:1fr;gap:8px}
+  .grid{gap:8px}
   .card{padding:10px}
   .card .ph{width:80px;height:80px}
   .card h3{font-size:15px}
@@ -464,7 +468,7 @@ function api(action, data, pub) {
 }
 function adm(action, data) {
   return api(action, Object.assign({token: S.token}, data || {})).then(function (r) {
-    if (/^(saveSettings|savePost|deletePost|saveTab|deleteTab|reorderTabs|uploadImage|deleteImage)$/.test(action)) cclear(); // data situs berubah: buang cache lama
+    if (/^(saveSettings|savePost|deletePost|saveSvc|deleteSvc|saveTab|deleteTab|reorderTabs|uploadImage|deleteImage)$/.test(action)) cclear(); // data situs berubah: buang cache lama
     return r;
   });
 }
@@ -621,6 +625,17 @@ function card(p) {
   return '<a class="card" href="#" data-post="' + esc(p.id) + '">' + (i ? '<img class="ph" src="' + esc(i) + '" alt="" loading="lazy">' : '') +
     '<div class="cb"><span class="meta">' + esc(fd(p.tanggal)) + '</span><h3>' + esc(p.judul) + '</h3><p>' + esc(p.ringkasan) + '</p><span class="more">Baca selengkapnya</span></div></a>';
 }
+function svcCard(v, i) {
+  var g = im(v.gambar), n = '<div class="n">' + (i + 1) + '</div>' + (g ? '<img class="sph" src="' + esc(g) + '" alt="" loading="lazy">' : '') +
+    '<strong>' + esc(v.judul) + '</strong>' + (v.ringkasan ? '<p>' + esc(v.ringkasan) + '</p>' : '');
+  return v.detail ? '<a class="sc" href="#" data-svc="' + esc(v.id) + '">' + n + '<span class="more">Selengkapnya</span></a>' : '<div class="sc">' + n + '</div>';
+}
+/* cadangan: bila server belum diperbarui, daftar layanan lama (satu per baris: Judul | Keterangan) tetap tampil */
+function svcLegacy(s) {
+  return String(s.layanan || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 12).map(function (l) {
+    var k = l.indexOf('|'); return {id: '', judul: (k < 0 ? l : l.slice(0, k)).trim(), ringkasan: k < 0 ? '' : l.slice(k + 1).trim(), gambar: '', detail: 0};
+  });
+}
 function waLink(u, m) {
   if (!u || !m || !/^https?:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(u) || /[?&]text=/i.test(u)) return u;
   return u + (u.indexOf('?') < 0 ? '?' : '&') + 'text=' + encodeURIComponent(m);
@@ -628,10 +643,7 @@ function waLink(u, m) {
 function home() {
   closeSheet(); S.cur = {t: 'home'}; nav();
   var s = S.s, h = im(s.hero_image), b = waLink(url(s.tombol_link), s.pesan_wa);
-  var sv = String(s.layanan || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 12).map(function (l, i) {
-    var k = l.indexOf('|'), t = (k < 0 ? l : l.slice(0, k)).trim(), d = k < 0 ? '' : l.slice(k + 1).trim();
-    return '<div class="sc"><div class="n">' + (i + 1) + '</div><strong>' + esc(t) + '</strong>' + (d ? '<p>' + esc(d) + '</p>' : '') + '</div>';
-  });
+  var svl = S.svc || svcLegacy(s), sv = svl.map(svcCard);
   var btn = s.tombol_teks && b ? '<a class="btn" href="' + esc(b) + '" target="_blank" rel="noopener">' + esc(s.tombol_teks) + '</a>' : '';
   var ghost = sv.length ? '<button class="btn ghost" type="button" data-scroll="layanan">Lihat Layanan</button>' : '';
   $('#view').innerHTML = '<div class="wrap"><section class="hero"><div>' + (s.label_atas ? '<span class="kick">' + esc(s.label_atas) + '</span>' : '') +
@@ -640,7 +652,7 @@ function home() {
     (s.info_bar ? '<div class="info">' + esc(s.info_bar) + '</div>' : '') +
     '<section class="posts"><div class="sh"><h2 class="jp">' + esc(s.judul_postingan) + '</h2>' + (S.total > S.latest.length ? '<a href="#" data-all>Lihat semua</a>' : '') + '</div>' +
     (S.latest.length ? '<div class="grid">' + S.latest.map(card).join('') + '</div>' : '<p class="meta">Belum ada postingan.</p>') + '</section>' +
-    (sv.length ? '<section class="sec" id="layanan"><h2>' + esc(s.judul_layanan || 'Layanan') + '</h2><div class="svc">' + sv.join('') + '</div></section>' : '') +
+    (sv.length ? '<section class="sec" id="layanan"><div class="sh"><h2>' + esc(s.judul_layanan || 'Layanan') + '</h2>' + (S.svcTotal > svl.length ? '<a href="#" data-allsvc>Lihat semua</a>' : '') + '</div><div class="svc">' + sv.join('') + '</div></section>' : '') +
     (s.kontak_teks ? '<section class="cta"><div><h2>' + esc(s.judul_kontak || 'Hubungi Kami') + '</h2><p>' + esc(s.kontak_teks) + '</p></div>' + btn + '</section>' : '') + '</div>';
   window.scrollTo(0, 0);
 }
@@ -654,6 +666,8 @@ function route(st) {
   closeSheet();
   if (st.t === 'post') return postView(st.id);
   if (st.t === 'all') return allView();
+  if (st.t === 'svc') return svcView(st.id);
+  if (st.t === 'allsvc') return allSvcView();
   if (st.t === 'tab') { var t = S.tabs.filter(function (x) { return x.id === st.id; })[0]; if (t) return tabView(t); }
   home();
 }
@@ -690,7 +704,18 @@ function openSheet(src, btn) {
     '<div class="svc"></div></div>';
   o.querySelector('#sht').textContent = (src.querySelector('h2') || {}).textContent || 'Layanan';
   o.querySelector('.svc').innerHTML = src.querySelector('.svc').innerHTML;
-  o.addEventListener('click', function (e) { if (e.target === o || e.target.closest('[data-close]')) dismissSheet(); });
+  o.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-svc]');
+    if (a) { // buka layanan dari daftar di HP: riwayat 'sheet' diganti halaman layanan (tombol back kembali ke beranda)
+      e.preventDefault();
+      var st = {t: 'svc', id: a.dataset.svc, i: HI};
+      closeSheet();
+      try { history.replaceState(st, ''); } catch (x) {}
+      route(st);
+      return;
+    }
+    if (e.target === o || e.target.closest('[data-close]')) dismissSheet();
+  });
   document.body.appendChild(o); document.body.style.overflow = 'hidden';
   hpush({ov: 'sheet'});
   o.querySelector('[data-close]').focus();
@@ -739,6 +764,7 @@ function prefetch() {
   S.pf = 1;
   var q = [['posts', {}, 'posts']];
   S.latest.forEach(function (p) { q.push(['post', {id: p.id}, 'post_' + p.id]); });
+  (S.svc || []).forEach(function (v) { if (v.detail) q.push(['svc', {id: v.id}, 'svc_' + v.id]); });
   S.tabs.forEach(function (t) { if (t.tipe === 'teks' || t.tipe === 'html') q.push(['tab', {id: t.id}, 'tab_' + t.id]); });
   (function next() {
     var x = q.shift(); if (!x) return;
@@ -755,6 +781,24 @@ function postView(id) {
     $('#view').innerHTML = '<div class="wrap"><article class="art"><a href="#" data-back>&larr; Kembali</a><div class="meta" style="margin-top:20px">' + esc(fd(p.tanggal)) + '</div><h1>' + esc(p.judul) + '</h1>' +
       (i ? '<img class="cover" src="' + esc(i) + '" alt="">' : '') + '<div class="rt">' + rich(p.isi) + '</div><div class="shr"><button class="bt" type="button" data-share>Bagikan</button></div></article></div>';
     S.shareT = p.judul; window.scrollTo(0, y); track('post', id);
+  }, fail);
+}
+function svcView(id) {
+  S.cur = {t: 'svc', id: id}; nav(); loading();
+  swr('svc', {id: id}, 'svc_' + id, function (p) {
+    if (S.cur.t !== 'svc' || S.cur.id !== id) return;
+    var i = im(p.gambar), y = window.scrollY, isi = String(p.isi || '').trim();
+    $('#view').innerHTML = '<div class="wrap"><article class="art"><a href="#" data-back>&larr; Kembali</a><div class="meta" style="margin-top:20px">' + esc(S.s.judul_layanan || 'Layanan') + '</div><h1>' + esc(p.judul) + '</h1>' +
+      (i ? '<img class="cover" src="' + esc(i) + '" alt="">' : '') + (isi ? '<div class="rt">' + rich(p.isi) + '</div>' : (p.ringkasan ? '<p>' + esc(p.ringkasan) + '</p>' : '')) +
+      '<div class="shr"><button class="bt" type="button" data-share>Bagikan</button></div></article></div>';
+    S.shareT = p.judul; window.scrollTo(0, y); track('svc', id);
+  }, fail);
+}
+function allSvcView() {
+  S.cur = {t: 'allsvc'}; nav(); loading();
+  swr('svcs', {}, 'svcs', function (list) {
+    if (S.cur.t !== 'allsvc') return;
+    $('#view').innerHTML = '<div class="wrap"><section class="sec"><div class="sh"><h2>' + esc(S.s.judul_layanan || 'Layanan') + '</h2><a href="#" data-back>Kembali</a></div><div class="svc">' + list.map(svcCard).join('') + '</div></section></div>';
   }, fail);
 }
 function allView() {
@@ -797,7 +841,7 @@ function track(k, id) {
   api('track', {k: k, id: id || ''}, 1).catch(function () {});
 }
 function shareNow() {
-  var t = S.shareT || document.title, u = location.origin + location.pathname + (S.cur.t === 'post' ? '?p=' + encodeURIComponent(S.cur.id) : '');
+  var t = S.shareT || document.title, u = location.origin + location.pathname + (S.cur.t === 'post' ? '?p=' + encodeURIComponent(S.cur.id) : S.cur.t === 'svc' ? '?s=' + encodeURIComponent(S.cur.id) : '');
   if (navigator.share) { navigator.share({title: t, text: t, url: u}).catch(function () {}); return; }
   if (navigator.clipboard) { navigator.clipboard.writeText(t + ' - ' + u).then(function () { toast('Tautan disalin.'); }, function () { toast('Tidak bisa menyalin tautan.', 1); }); return; }
   window.open('https://wa.me/?text=' + encodeURIComponent(t + ' ' + u), '_blank', 'noopener');
@@ -809,11 +853,12 @@ $('#btnTheme').addEventListener('click', function () {
 });
 $('#view').addEventListener('click', function (e) {
   if (e.target.closest('[data-share]')) { shareNow(); return; }
-  var a = e.target.closest('[data-post],[data-all],[data-back]'); if (!a) return; e.preventDefault();
-  if (a.dataset.post) go({t: 'post', id: a.dataset.post}); else if ('all' in a.dataset) go({t: 'all'}); else goBack();
+  var a = e.target.closest('[data-post],[data-all],[data-back],[data-svc],[data-allsvc]'); if (!a) return; e.preventDefault();
+  if (a.dataset.post) go({t: 'post', id: a.dataset.post}); else if (a.dataset.svc) go({t: 'svc', id: a.dataset.svc});
+  else if ('allsvc' in a.dataset) go({t: 'allsvc'}); else if ('all' in a.dataset) go({t: 'all'}); else goBack();
 });
 function applyPublic(d, rerender) {
-  S.s = d.settings; S.latest = d.latest; S.total = d.total;
+  S.s = d.settings; S.latest = d.latest; S.total = d.total; S.svc = d.svc; S.svcTotal = d.svcTotal || 0;
   S.tabs = d.tabs.slice();
   // tab Presensi selalu tersedia; baru disembunyikan bila server (versi baru) menyatakan admin menyembunyikannya
   if (!S.tabs.some(function (t) { return t.tipe === 'presensi'; }) && d.pres === undefined) S.tabs.push({id: 't_presensi', nama: 'Presensi', tipe: 'presensi', isi: ''});
@@ -1035,8 +1080,8 @@ var FIELDS = [
   ['pesan_wa', 'Pesan awal WhatsApp', 'text', 'Terisi otomatis saat pengunjung menekan tombol, jika link tombol berupa wa.me/… Kosongkan jika tidak perlu.'],
   ['hero_image', 'Foto beranda', 'img'],
   ['info_bar', 'Kotak info di bawah foto', 'textarea', 'Opsional. Contoh: pembinaan atau penghargaan. Kosongkan untuk menyembunyikan.', 3],
-  ['judul_layanan', 'Judul bagian layanan', 'text'],
-  ['layanan', 'Daftar layanan', 'textarea', 'Satu layanan per baris, format: Judul | Penjelasan singkat. Kosongkan untuk menyembunyikan bagian ini.', 7],
+  ['judul_layanan', 'Judul bagian layanan', 'text', 'Daftar layanan diisi lewat menu <b>Layanan</b> di panel ini. Jika belum ada layanan terbit, bagian ini otomatis disembunyikan.'],
+  ['jumlah_layanan', 'Jumlah layanan di beranda (1–12)', 'number'],
   ['judul_kontak', 'Judul kotak kontak (bawah)', 'text'],
   ['kontak_teks', 'Isi kotak kontak', 'textarea', 'Alamat, email, telepon (satu per baris). Tombolnya memakai teks & link tombol di atas. Kosongkan untuk menyembunyikan.', 4],
   ['judul_postingan', 'Judul bagian postingan', 'text'],
@@ -1106,10 +1151,11 @@ function adminSoft() {
   var n = ac.querySelector('.ptw'); if (n) { n.scrollLeft = px; n.scrollTop = py; }
 }
 function adminDraw(soft) {
-  var nav_ = [['set', 'Identitas & tampilan'], ['post', 'Postingan'], ['stat', 'Statistik'], ['pres', 'Presensi'], ['tab', 'Menu tab'], ['acc', 'Akun']];
+  var nav_ = [['set', 'Identitas & tampilan'], ['post', 'Postingan'], ['svc', 'Layanan'], ['stat', 'Statistik'], ['pres', 'Presensi'], ['tab', 'Menu tab'], ['acc', 'Akun']];
   var IC = {
     set: '<path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
     post: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+    svc: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
     stat: '<path d="M5 20V10M12 20V4M19 20v-7"/>',
     pres: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/>',
     tab: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
@@ -1119,7 +1165,7 @@ function adminDraw(soft) {
     return '<button data-sec="' + x[0] + '"' + (A.sec === x[0] ? ' aria-current="true"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[x[0]] + '</svg><span>' + x[1] + '</span></button>';
   }).join('');
   var h = A.d.mustChange ? '<div class="warn"><b>Ganti password sekarang.</b> Akun masih memakai password awal. Buka menu Akun (username juga bisa diganti).</div>' : '';
-  $('#ac').innerHTML = '<div class="pane' + (soft ? '' : ' anim') + '">' + h + ({set: secSet, post: secPost, stat: secStat, pres: secPres, tab: secTab, acc: secAcc}[A.sec])() + '</div>';
+  $('#ac').innerHTML = '<div class="pane' + (soft ? '' : ' anim') + '">' + h + ({set: secSet, post: secPost, svc: secSvc, stat: secStat, pres: secPres, tab: secTab, acc: secAcc}[A.sec])() + '</div>';
 }
 function secSet() {
   var s = A.d.settings;
@@ -1200,6 +1246,25 @@ function insImg() {
   ta.focus(); ta.setSelectionRange(c, c);
   ['ip_url', 'ip_k'].forEach(function (i) { $('#' + i).value = ''; });
   $('#ipn').hidden = true; prevUpd(); toast('Gambar disisipkan. Klik Simpan postingan untuk menerapkan.');
+}
+function secSvc() {
+  var e = A.ed && A.ed.k === 'svc' ? A.ed.v : null, list = A.d.svc || [];
+  if (e) {
+    return '<div class="ph2"><h2>' + (e.id ? 'Ubah layanan' : 'Layanan baru') + '</h2></div><form data-form="svc"><input type="hidden" name="id" value="' + esc(e.id) + '">' +
+      fld(['judul', 'Jenis layanan', 'text', 'Contoh: Service Laptop.'], e.judul) + fld(['ringkasan', 'Keterangan layanan (tampil di kartu)', 'textarea', 'Maksimal sekitar 2 kalimat.', 2], e.ringkasan) +
+      richField(e.isi, 'Penjelasan lengkap (opsional)') +
+      '<small style="display:block;margin:-8px 0 16px;color:var(--mut)">Isi bila kartu perlu dibuka seperti postingan (muncul tulisan “Selengkapnya”). Kosongkan bila cukup dengan keterangan di kartu.</small>' +
+      fld(['gambar', 'Gambar (opsional, tampil di kartu & bagian atas halaman layanan)', 'img'], e.gambar) +
+      fld(['urutan', 'Nomor urut tampil', 'number', 'Layanan paling kecil tampil paling awal. Kosongkan untuk ditaruh di urutan terakhir.'], e.urutan) +
+      fld(['tanggal', 'Tanggal terbit', 'date', 'Isi tanggal mendatang untuk menjadwalkan: layanan tampil otomatis pada tanggal itu (bisa tertunda beberapa menit karena cache). Status Draf selalu disembunyikan.'], e.tanggal) +
+      '<div class="fg"><label for="f_status">Status</label><select id="f_status" name="status"><option value="terbit"' + (e.status !== 'draf' ? ' selected' : '') + '>Terbit</option><option value="draf"' + (e.status === 'draf' ? ' selected' : '') + '>Draf (disembunyikan)</option></select></div>' +
+      '<div class="acts"><button class="btn" type="submit">Simpan layanan</button><button class="bt" type="button" data-act="cancel">Batal</button></div></form>';
+  }
+  return '<div class="ph2"><h2>Layanan</h2><button class="btn sm" data-act="newsvc">Tambah layanan</button></div>' +
+    '<div class="tip">Layanan tampil di beranda pada bagian “' + esc(A.d.settings.judul_layanan || 'Layanan') + '”. Bila tidak ada layanan terbit, bagian itu otomatis hilang dan kotak postingan menyesuaikan lebar layar.</div>' +
+    (list.length ? list.map(function (p) {
+      return '<div class="li"><div><b>' + esc(p.urutan) + '. ' + esc(p.judul) + '</b><span class="meta">' + (p.status === 'draf' ? 'Draf' : (p.tanggal > todayStr() ? 'Terjadwal' : 'Terbit')) + (String(p.isi || '').trim() ? ' · Ada penjelasan lengkap' : '') + '</span></div><div class="acts"><button class="bt" data-act="editsvc" data-id="' + esc(p.id) + '">Ubah</button><button class="bt dng" data-act="delsvc" data-id="' + esc(p.id) + '">Hapus</button></div></div>';
+    }).join('') : '<p class="meta">Belum ada layanan.</p>');
 }
 function secPost() {
   var e = A.ed && A.ed.k === 'post' ? A.ed.v : null;
@@ -1573,6 +1638,15 @@ $('#ac').addEventListener('click', function (e) {
   if (a === 'cancel') { A.ed = null; adminRender(); return; }
   if (a === 'newpost') { A.ed = {k: 'post', v: {id: '', judul: '', ringkasan: '', isi: '', gambar: '', tanggal: (function (d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })(new Date()), status: 'terbit'}}; adminRender(); return; }
   if (a === 'editpost') { A.ed = {k: 'post', v: byId(A.d.posts, id)}; adminRender(); return; }
+  if (a === 'newsvc') { A.ed = {k: 'svc', v: {id: '', judul: '', ringkasan: '', isi: '', gambar: '', urutan: '', tanggal: todayStr(), status: 'terbit'}}; adminRender(); return; }
+  if (a === 'editsvc') { A.ed = {k: 'svc', v: byId(A.d.svc || [], id)}; adminRender(); return; }
+  if (a === 'delsvc') {
+    var sv0 = byId(A.d.svc || [], id) || {};
+    ask({judul: 'Hapus layanan ini?', html: 'Layanan <b>' + esc(sv0.judul || '') + '</b> akan dihapus permanen.', ya: 'Ya, hapus'}).then(function (y) {
+      if (y) guard(adm('deleteSvc', {id: id})).then(function (l) { A.d.svc = l; adminRender(); toast('Layanan dihapus.'); }).catch(function () {});
+    });
+    return;
+  }
   if (a === 'newtab') { A.ed = {k: 'tab', v: {id: '', nama: '', tipe: 'teks', isi: '', aktif: 'ya'}}; adminRender(); return; }
   if (a === 'edittab') { A.ed = {k: 'tab', v: byId(A.d.tabs, id)}; adminRender(); return; }
   if (a === 'delpost') {
@@ -1598,7 +1672,7 @@ $('#ac').addEventListener('click', function (e) {
 });
 $('#ac').addEventListener('change', function (e) {
   var t = e.target;
-  if (t.form && /^(set|post|tab|acc|pset|kar|rp)$/.test(t.form.dataset.form || '')) A.dirty = true;
+  if (t.form && /^(set|post|svc|tab|acc|pset|kar|rp)$/.test(t.form.dataset.form || '')) A.dirty = true;
   if (t.name === 'tipe') {
     var cur = $('#f_isi'), row = $('#isiRow');
     row.hidden = t.value === 'beranda' || t.value === 'presensi'; row.innerHTML = isiBody(t.value, cur ? cur.value : '');
@@ -1615,7 +1689,7 @@ $('#ac').addEventListener('change', function (e) {
 });
 $('#ac').addEventListener('input', function (e) {
   var t = e.target;
-  if (t.form && /^(set|post|tab|acc|pset|kar|rp)$/.test(t.form.dataset.form || '')) A.dirty = true;
+  if (t.form && /^(set|post|svc|tab|acc|pset|kar|rp)$/.test(t.form.dataset.form || '')) A.dirty = true;
   if (t.id === 'f_isi') prevUpd();
   if (t.dataset && t.dataset.z) t.form.elements[t.dataset.z].value = t.value;
   else if (t.name && /^(ukuran_|gelap_)/.test(t.name)) { var r = t.form.querySelector('[data-z="' + t.name + '"]'); if (r) r.value = t.value; }
@@ -1630,6 +1704,7 @@ $('#ac').addEventListener('submit', function (e) {
   var p;
   if (k === 'set') p = adm('saveSettings', {data: v}).then(function (s) { A.d.settings = s; toast('Pengaturan disimpan.'); });
   else if (k === 'post') p = adm('savePost', {post: v}).then(function (l) { A.d.posts = l; A.ed = null; toast('Postingan disimpan.'); });
+  else if (k === 'svc') p = adm('saveSvc', {svc: v}).then(function (l) { A.d.svc = l; A.ed = null; toast('Layanan disimpan.'); });
   else if (k === 'tab') {
     if (v.tipe === 'link' || v.tipe === 'embed') v.isi = url(v.isi) || v.isi;
     p = adm('saveTab', {tab: v}).then(function (l) { A.d.tabs = l; A.ed = null; toast('Tab disimpan.'); });
@@ -1668,7 +1743,7 @@ function shrink(file) {
   });
 }
 
-var DL = new URLSearchParams(location.search).get('p');
+var DL = new URLSearchParams(location.search).get('p'), DS = new URLSearchParams(location.search).get('s');
 if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); }).catch(function () {}); // bersihkan service worker lama
 (function boot() {
   track('visit');
@@ -1681,6 +1756,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().the
   try { cached = JSON.parse(localStorage.getItem(CK)); } catch (e) {}
   if (cached && cached.settings) applyPublic(cached, true); else { theme(); loading(); }
   if (DL) { hpush({t: 'post', id: DL}); route({t: 'post', id: DL}); }
+  else if (DS) { hpush({t: 'svc', id: DS}); route({t: 'svc', id: DS}); }
   api('public', {}, 1).then(function (d) {
     try { localStorage.setItem(CK, JSON.stringify(d)); } catch (e) {}
     applyPublic(d, S.cur.t === 'home');
