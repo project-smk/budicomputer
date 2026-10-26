@@ -6,6 +6,8 @@
 <title>Profil Usaha</title>
 <script>try{var m=localStorage.getItem('wp_theme');document.documentElement.dataset.theme=m==='dark'?'dark':'light';}catch(e){}</script>
 <link rel="icon" type="image/png" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDe9GDtT8FV08iVmLcmqOn_xocE-bhY6Be78iNFq8Y_CGQtnlxXmOngnHjGqHsE4Lffgy4gKGA4MawDftRselAbk5oCNFZoXr8TRTp8vTKHIPMbveqFSgtSjlaBgclRi_qU9NJVBnw4aSpLQ08rHdyJbjfzYhnuez7mafH4RF5FwJ8XulcSiNICmhYwtLK/s320/BUDI%20KOMPUTER.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0F4C5C">
 <link rel="apple-touch-icon" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDe9GDtT8FV08iVmLcmqOn_xocE-bhY6Be78iNFq8Y_CGQtnlxXmOngnHjGqHsE4Lffgy4gKGA4MawDftRselAbk5oCNFZoXr8TRTp8vTKHIPMbveqFSgtSjlaBgclRi_qU9NJVBnw4aSpLQ08rHdyJbjfzYhnuez7mafH4RF5FwJ8XulcSiNICmhYwtLK/s320/BUDI%20KOMPUTER.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -404,6 +406,18 @@ input:focus,select:focus,textarea:focus{border-color:var(--pt)!important;box-sha
 /* label kecil & info */
 .kick{border:1px solid color-mix(in srgb,var(--p) 25%,transparent)}
 [data-theme=dark] .kick{background:color-mix(in srgb,var(--p) 30%,var(--card));color:#fff}
+/* ===== Tombol Instal Aplikasi (hilang-timbul) ===== */
+#pwa{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;pointer-events:none}
+#pwa[hidden]{display:none}
+#pwaBtn{pointer-events:none;visibility:hidden;opacity:0;transform:translateY(24px) scale(.96);transition:transform .25s cubic-bezier(.2,.9,.3,1.2),opacity .2s,visibility .25s;display:flex;align-items:center;gap:8px;background:var(--p);color:#fff;border:0;border-radius:999px;padding:12px 18px;font:700 14px/1 inherit;font-family:inherit;box-shadow:0 12px 28px -8px rgba(0,0,0,.45);cursor:pointer}
+#pwa.on #pwaBtn{pointer-events:auto;visibility:visible;opacity:1;transform:none}
+#pwaBtn:focus-visible,#pwaH:focus-visible{outline:3px solid var(--a);outline-offset:2px}
+#pwaH{position:fixed;right:16px;bottom:env(safe-area-inset-bottom,0px);width:46px;height:22px;border:0;border-radius:12px 12px 0 0;background:var(--p);color:#fff;display:grid;place-items:center;opacity:.5;cursor:pointer;pointer-events:auto;transition:opacity .2s}
+#pwaH:hover{opacity:.9}
+#pwa.on #pwaH{opacity:0;pointer-events:none}
+#pwaTip{position:absolute;right:0;bottom:calc(100% + 10px);width:min(280px,82vw);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.5;box-shadow:0 14px 30px -10px rgba(0,0,0,.4);pointer-events:auto}
+#pwaTip[hidden]{display:none}
+@media print{#pwa,#pwaH{display:none}}
 </style>
 </head>
 <body>
@@ -429,6 +443,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--pt)!important;box-sha
   <div class="ab"><nav class="side" id="side" aria-label="Menu admin"></nav><div id="ac"></div></div>
 </div>
 <div id="toast" hidden role="status"></div>
+
+<div id="pwa" hidden>
+  <div id="pwaTip" role="note" hidden></div>
+  <button id="pwaBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg><span>Instal Aplikasi</span></button>
+</div>
+<button id="pwaH" type="button" aria-label="Tampilkan tombol instal aplikasi" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
 
 <script>
 /* ===== PENGATURAN: tempel URL web app Apps Script Anda di sini ===== */
@@ -1766,7 +1786,62 @@ function shrink(file) {
 }
 
 var DL = new URLSearchParams(location.search).get('p'), DS = new URLSearchParams(location.search).get('s');
-if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); }).catch(function () {}); // bersihkan service worker lama
+/* Service worker khusus aplikasi ini (hanya scope folder ini; TIDAK menyentuh aplikasi lain di domain yang sama) */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { try { navigator.serviceWorker.register('sw.js', {scope: './'}).catch(function () {}); } catch (e) {} }
+
+/* ===== Tombol Instal Aplikasi: melayang, hilang-timbul, hilang setelah terpasang ===== */
+(function pwaInstall() {
+  var box = document.getElementById('pwa'), btn = document.getElementById('pwaBtn'), handle = document.getElementById('pwaH'), tip = document.getElementById('pwaTip');
+  if (!box || !btn || !handle) return;
+  var TEASER = true;            // true = muncul sebentar (3,5 dtk) saat pertama siap, lalu bersembunyi
+  var dp = null, ready = false, offT = 0, nearM = false;
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  function standalone() {
+    try { if (navigator.standalone === true) return true; } catch (e) {}
+    return ['standalone', 'minimal-ui', 'fullscreen', 'window-controls-overlay'].some(function (m) { return window.matchMedia('(display-mode: ' + m + ')').matches; });
+  }
+  function on() { if (!ready) return; clearTimeout(offT); box.classList.add('on'); }
+  function off(ms) { clearTimeout(offT); offT = setTimeout(function () { box.classList.remove('on'); tip.hidden = true; }, ms || 0); }
+  function gone() { ready = false; dp = null; box.hidden = true; handle.hidden = true; box.classList.remove('on'); }
+  function ready_() { if (ready || standalone()) return; ready = true; box.hidden = false; handle.hidden = false; if (TEASER) { on(); off(3500); } }
+
+  /* Kunci: tombol HANYA muncul bila browser sendiri bilang aplikasi ini BISA dipasang
+     (event beforeinstallprompt). Tidak memakai flag localStorage, jadi tidak tertukar
+     dengan aplikasi lain di domain yang sama. */
+  if (standalone()) return;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); dp = e; ready_(); });
+  window.addEventListener('appinstalled', gone);
+  try { window.matchMedia('(display-mode: standalone)').addEventListener('change', function (m) { if (m.matches) gone(); }); } catch (e) {}
+  if (ios) ready_();            // iOS tidak punya prompt otomatis -> tampilkan petunjuk
+
+  btn.addEventListener('click', function () {
+    if (dp) {
+      var p = dp; dp = null;
+      p.prompt();
+      p.userChoice.then(function () { gone(); }).catch(function () { gone(); });
+    } else if (ios) {
+      tip.innerHTML = 'Ketuk ikon <b>Bagikan</b> di Safari, lalu pilih <b>Tambahkan ke Layar Utama</b>.';
+      tip.hidden = false; on(); off(8000);
+    }
+  });
+  handle.addEventListener('click', function () { on(); off(5000); });
+  handle.addEventListener('focus', on);
+  box.addEventListener('focusin', on);
+  box.addEventListener('focusout', function (e) { if (!box.contains(e.relatedTarget)) off(300); });
+
+  /* Mouse: muncul saat kursor mendekati pojok kanan-bawah, hilang saat menjauh */
+  document.addEventListener('pointermove', function (e) {
+    if (!ready || e.pointerType !== 'mouse') return;
+    var near = (window.innerWidth - e.clientX) < 240 && (window.innerHeight - e.clientY) < 120;
+    if (near) { nearM = true; on(); } else if (nearM) { nearM = false; off(500); }
+  }, {passive: true});
+  /* Sentuh: ketuk di luar menyembunyikan tombol */
+  document.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' || !box.classList.contains('on')) return;
+    if (!box.contains(e.target) && e.target !== handle) off(0);
+  }, {passive: true});
+})();
 (function boot() {
   track('visit');
   if (/GANTI_DENGAN/.test(API_URL)) {
