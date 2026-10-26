@@ -420,6 +420,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--pt)!important;box-sha
 .sheet .sc>p{margin:2px 0 0}
 .sheet .sc>.more{margin-top:4px;justify-self:start}
 .sheet .sc img.sph{order:-1;grid-column:1/-1;height:96px;margin-bottom:10px}
+div.pgl{cursor:default}
+div.pgl:not(.on){opacity:.5}
 /* ===== Tombol Instal Aplikasi (hilang-timbul) ===== */
 #pwa{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;pointer-events:none}
 #pwa[hidden]{display:none}
@@ -917,7 +919,27 @@ function ptok(t) { P.tok = t; try { t ? sessionStorage.setItem('pusaha_ptok', t)
 function pApi(a, d) { return api(a, Object.assign({token: P.tok}, d || {})); }
 function jam(s) { return s ? String(s).slice(0, 5) : '–'; }
 function pOn() { return S.cur.t === 'tab' && S.cur.id === P.tab; }
-function pTick() { var c = document.getElementById('pclk'); if (c) c.textContent = new Date().toLocaleTimeString('id-ID', {hour12: false}); }
+/* waktu & gelombang mengikuti SERVER (bukan jam HP) */
+function psync(d) {
+  if (!d || !d.jam_server || d === P.sd) return;
+  var p = String(d.jam_server).split(':');
+  P.sd = d; P.sv = {s: (+p[0] || 0) * 3600 + (+p[1] || 0) * 60 + (+p[2] || 0), at: performance.now()};
+}
+function srvSec() { var v = P.sv; if (!v) { var n = new Date(); return n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds(); } return (v.s + (performance.now() - v.at) / 1000) % 86400; }
+/* jadwal presensi menurut waktu server (cermin dari server; yang berlaku tetap hasil hitungan server) */
+function winNow(d) {
+  var m = function (t) { var p = String(t || '').split(':'); return (+p[0] || 0) * 60 + (+p[1] || 0); }, n = Math.floor(srvSec() / 60);
+  if (!d.akhir1) return {gel: n < (m(d.jam_masuk) + m(d.jam_masuk2)) / 2 ? '1' : '2', st: 'Hadir'}; // server lama
+  var tol = +d.toleransi || 0, gel = n < m(d.akhir1) ? '1' : '2', j = m(gel === '1' ? d.jam_masuk : d.jam_masuk2);
+  if (n >= m(d.akhir2)) return {gel: gel, st: 'tutup'};
+  return {gel: gel, st: n < j ? 'Hadir (Terlalu cepat)' : n > j + tol ? 'Terlambat' : 'Hadir'};
+}
+function stL(x) { return x === 'Terlambat' ? 'Hadir (Terlambat)' : x; } // tampilan status
+function pTick() {
+  var c = document.getElementById('pclk');
+  if (c) { var t = Math.floor(srvSec()), z = function (n) { return ('0' + n).slice(-2); }; c.textContent = z(Math.floor(t / 3600)) + ':' + z(Math.floor(t % 3600 / 60)) + ':' + z(t % 60); }
+  if (document.getElementById('pgwrap') && P.d && P.d.jam_masuk) { var w = winNow(P.d); if (w.gel + '|' + w.st !== P.wk) presDash(); } // lewat batas gelombang / toleransi
+}
 setInterval(pTick, 1000);
 function loadJs(src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
 function hav(a, b, c, d) { var r = Math.PI / 180, x = (c - a) * r, y = (d - b) * r, h = Math.sin(x / 2) * Math.sin(x / 2) + Math.cos(a * r) * Math.cos(c * r) * Math.sin(y / 2) * Math.sin(y / 2); return 2 * 6371000 * Math.asin(Math.sqrt(h)); }
@@ -943,19 +965,17 @@ function pfr(t) { return !!t && Date.now() - t < 180000; }
 function pReady() {
   var d = P.d, r = d.hari || {}, g = P.gps || {};
   if (P.st !== 'Hadir') return !!P.sf && P.ket.trim().length >= 5;
+  if (winNow(d).st === 'tutup') return false;
   return (!d.selfie || !!P.sf) && (!d.radius || !!(g.ok && pfr(g.t))) && (!d.barcode || !!(P.bc && pfr(P.bc.t)));
 }
 function pSync() {
   var b = $('#pgo'), h = $('#pgh'); if (!b) return; var ok = pReady(); b.disabled = !ok;
-  if (h) h.textContent = ok ? 'Waktu dicatat otomatis dari server.' : 'Selesaikan semua langkah di atas untuk mengaktifkan tombol.';
+  if (h) h.textContent = ok ? 'Waktu dicatat otomatis dari server.' : (P.st === 'Hadir' && winNow(P.d).st === 'tutup') ? 'Presensi masuk hari ini sudah ditutup.' : 'Selesaikan semua langkah di atas untuk mengaktifkan tombol.';
 }
 function presDash() {
   var d = P.d; if (d.peran === 'barcode') return presBarcode();
   var r = d.hari || {}, lk = !!r.status && !r.masuk, done = !!r.masuk, hadir = P.st === 'Hadir', izin = !r.masuk && !hadir;
-  if (!P.gel) {
-    var m = function (t) { var p = String(t).split(':'); return (+p[0] || 0) * 60 + (+p[1] || 0); }, now = new Date();
-    P.gel = now.getHours() * 60 + now.getMinutes() < (m(d.jam_masuk) + m(d.jam_masuk2)) / 2 ? '1' : '2';
-  }
+  psync(d); var w = winNow(d); P.gel = w.gel; P.wk = w.gel + '|' + w.st; // gelombang & status otomatis dari waktu server
   var g = P.gps || {}, sOk = !!P.sf, gOk = !!(g.ok && pfr(g.t)), bOk = !!(P.bc && pfr(P.bc.t)), n = 0, st = '';
   var bt = function (a, t) { return '<button class="bt" type="button" data-pa="' + a + '">' + t + '</button>'; };
   var img = sOk ? '<img src="' + P.sf + '" alt="Foto">' : '';
@@ -970,10 +990,11 @@ function presDash() {
     }
     if (d.barcode) st += pstep(++n, bOk ? 'ok' : '', 'Scan barcode', bOk ? 'Barcode terbaca.' : 'Scan barcode di layar lokasi PKL.', bt('scan', bOk ? 'Scan ulang' : 'Scan barcode'));
   }
-  var sel = r.status ? '<div class="pc"><h3>Hari ini</h3><p>' + (r.masuk ? 'Masuk <b>' + jam(r.masuk) + '</b> · ' + esc(r.status) + (r.gelombang ? ' · Gelombang ' + esc(r.gelombang) : '') : 'Tercatat <b>' + esc(r.status) + '</b>' + (r.catatan ? ' — ' + esc(r.catatan) : '')) + '</p></div>' :
-    '<div class="pdu">' + [['1', d.jam_masuk], ['2', d.jam_masuk2]].map(function (x) {
-      return '<button type="button" class="pgl' + (P.gel === x[0] ? ' on' : '') + '" data-pg="' + x[0] + '" aria-pressed="' + (P.gel === x[0]) + '"><span class="meta">Masuk</span><b>' + esc(x[1]) + '</b><span class="meta">Gelombang ' + x[0] + '</span></button>';
-    }).join('') + '</div><div class="pseg">' + ['Hadir', 'Izin', 'Sakit'].map(function (s) {
+  var sel = r.status ? '<div class="pc"><h3>Hari ini</h3><p>' + (r.masuk ? 'Masuk <b>' + jam(r.masuk) + '</b> · ' + esc(stL(r.status)) + (r.gelombang ? ' · Gelombang ' + esc(r.gelombang) : '') : 'Tercatat <b>' + esc(r.status) + '</b>' + (r.catatan ? ' — ' + esc(r.catatan) : '')) + '</p></div>' :
+    '<div class="pdu" id="pgwrap">' + [['1', d.jam_masuk], ['2', d.jam_masuk2]].map(function (x) {
+      var on = P.gel === x[0];
+      return '<div class="pgl' + (on ? ' on' : '') + '"' + (on ? ' aria-current="true"' : '') + '><span class="meta">Masuk</span><b>' + esc(x[1]) + '</b><span class="meta">Gelombang ' + x[0] + (on ? ' · aktif' : '') + '</span></div>';
+    }).join('') + '</div><p class="meta" style="margin:8px 2px 0">Gelombang ditentukan otomatis sesuai waktu server.' + (hadir ? '<br><b>' + (w.st === 'tutup' ? 'Presensi masuk sudah ditutup (batas ' + esc(d.akhir2) + ').' : w.st === 'Hadir' ? 'Jika presensi sekarang: Hadir.' : w.st === 'Terlambat' ? 'Jika presensi sekarang: Hadir (Terlambat).' : 'Terlalu cepat, jika presensi sekarang: Hadir (Terlalu cepat).') + '</b>' : '') + '</p><div class="pseg">' + ['Hadir', 'Izin', 'Sakit'].map(function (s) {
       return '<button type="button" class="' + (P.st === s ? 'on' : '') + '" data-ps="' + s + '" aria-pressed="' + (P.st === s) + '">' + s + '</button>';
     }).join('') + '</div>';
   var ja = hadir ? 'masuk' : P.st.toLowerCase(), lb = hadir ? 'Presensi Masuk' : 'Kirim ' + P.st, rd = pReady();
@@ -983,7 +1004,7 @@ function presDash() {
     '<div class="pclk" id="pclk"></div></div>' + sel +
     ((lk || done) ? '' : '<div class="pc"><h3>Langkah presensi</h3>' + st + '</div>') + '<div>' + aksi + '</div>' +
     '<div class="pc"><h3>Riwayat terakhir</h3>' + (d.riwayat.length ? d.riwayat.map(function (x) {
-      return '<div class="li"><div><b>' + esc(fd(x.tanggal)) + '</b><span class="meta">' + esc(x.status || '') + '</span></div><span>' + jam(x.masuk) + '</span></div>';
+      return '<div class="li"><div><b>' + esc(fd(x.tanggal)) + '</b><span class="meta">' + esc(stL(x.status || '')) + '</span></div><span>' + jam(x.masuk) + '</span></div>';
     }).join('') : '<p class="meta">Belum ada riwayat.</p>') + '</div><button class="bt" data-pa="keluar">Keluar</button></div></div>';
   pTick();
 }
@@ -1078,7 +1099,7 @@ function presAbsen(jenis, btn) {
   var lbl = btn.textContent; btn.disabled = true; btn.textContent = 'Mengirim…';
   var send = function (g) {
     pApi('pAbsen', {jenis: jenis, lat: g.lat == null ? '' : g.lat, lng: g.lng == null ? '' : g.lng, acc: g.acc == null ? '' : g.acc, selfie: P.sf || '', ticket: P.bc ? P.bc.text : '', gel: P.gel, ket: P.ket}).then(function (d) {
-      P.d = d; P.sf = P.gps = P.bc = null; P.ket = ''; if (pOn()) presDash(); toast(jenis === 'masuk' ? 'Presensi masuk tercatat.' : 'Pengajuan ' + jenis + ' tercatat.');
+      P.d = d; P.sf = P.gps = P.bc = null; P.ket = ''; if (pOn()) presDash(); toast(jenis === 'masuk' ? 'Presensi masuk tercatat' + (d.hari && d.hari.status ? ' · ' + stL(d.hari.status) : '') + '.' : 'Pengajuan ' + jenis + ' tercatat.');
     }).catch(function (e) {
       toast(msg(e), 1);
       if (/Sesi/.test(msg(e))) { ptok(null); presReset(); presLogin(msg(e)); } else { btn.disabled = false; btn.textContent = lbl; }
@@ -1421,7 +1442,7 @@ function secAcc() {
     '<button class="btn" type="submit">Simpan akun</button></form>';
 }
 /* ============ ADMIN: PRESENSI (sub tab: Pengaturan | Rekap Harian) ============ */
-var STS = ['Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpa'];
+var STS = ['Hadir', 'Hadir (Terlalu cepat)', 'Terlambat', 'Izin', 'Sakit', 'Alpa'];
 var STI = {
   st: '<path d="M4 6h16M4 12h10M4 18h7"/><path d="M16 15l2 2 3-4"/>',
   rek: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M8 14h2M12 14h2M16 14h0M8 17h2M12 17h2"/>',
@@ -1454,7 +1475,7 @@ function secPres() {
     return '<div class="ph2"><h2>' + (ed ? 'Edit status presensi' : 'Catatan presensi manual') + '</h2></div><form data-form="rp">' +
       '<div class="fg"><label for="f_kode">Siswa</label><select id="f_kode" name="kode"' + (ed ? ' disabled' : '') + '>' + p.karyawan.filter(function (k) { return k.peran !== 'barcode'; }).map(function (k) { return '<option value="' + esc(k.kode) + '"' + (String(k.kode) === String(e.kode) ? ' selected' : '') + '>' + esc(k.nama) + ' (' + esc(k.kode) + ')</option>'; }).join('') + '</select></div>' +
       fld(['tanggal', 'Tanggal', 'date'], e.tanggal).replace('name="tanggal"', 'name="tanggal"' + (ed ? ' disabled' : '')) +
-      '<div class="fg"><label for="f_status">Status</label><select id="f_status" name="status">' + STS.map(function (s) { return '<option' + (e.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div>' +
+      '<div class="fg"><label for="f_status">Status</label><select id="f_status" name="status">' + STS.map(function (s) { return '<option value="' + esc(s) + '"' + (e.status === s ? ' selected' : '') + '>' + esc(stL(s)) + '</option>'; }).join('') + '</select></div>' +
       '<div class="fg"><label for="f_gel">Gelombang</label><select id="f_gel" name="gelombang"><option value=""' + (!e.gelombang ? ' selected' : '') + '>–</option><option value="1"' + (String(e.gelombang) === '1' ? ' selected' : '') + '>Gelombang 1</option><option value="2"' + (String(e.gelombang) === '2' ? ' selected' : '') + '>Gelombang 2</option></select></div>' +
       fld(['masuk', 'Jam masuk (opsional)', 'time'], String(e.masuk || '').slice(0, 5)) +
       fld(['catatan', 'Catatan (opsional)', 'text'], e.catatan) +
@@ -1480,13 +1501,13 @@ function presSt_() {
     }
     return form + '<p class="meta">Memuat…</p>';
   }
-  var L = {Hadir: 'H', Terlambat: 'T', Izin: 'I', Sakit: 'S', Alpa: 'A'}, cnt = {}, belum = 0;
+  var L = {Hadir: 'H', 'Hadir (Terlalu cepat)': 'H', Terlambat: 'T', Izin: 'I', Sakit: 'S', Alpa: 'A'}, cnt = {}, belum = 0;
   d.items.forEach(function (o) { if (o.rec && o.rec.status) cnt[o.rec.status] = (cnt[o.rec.status] || 0) + 1; else belum++; });
   return form + '<h3 style="margin:8px 0 4px">' + (d.tanggal === todayStr() ? 'Status hari ini' : 'Status tanggal') + ' · ' + esc(fd(d.tanggal)) + '</h3>' +
-    '<div class="chips">' + STS.map(function (s) { return '<div class="chp k' + L[s] + '"><b>' + (cnt[s] || 0) + '</b>' + s + '</div>'; }).join('') + '<div class="chp"><b>' + belum + '</b>Belum presensi</div></div>' +
+    '<div class="chips">' + STS.map(function (s) { return '<div class="chp k' + L[s] + '"><b>' + (cnt[s] || 0) + '</b>' + esc(stL(s)) + '</div>'; }).join('') + '<div class="chp"><b>' + belum + '</b>Belum presensi</div></div>' +
     (d.items.length ? d.items.map(function (o) {
       var r = o.rec, lk = r ? [purl(r.foto) ? '<a href="' + esc(purl(r.foto)) + '" target="_blank" rel="noopener">Foto ' + (r.masuk ? 'masuk' : 'bukti') + '</a>' : '', pmap(r.lokasi) ? '<a href="' + esc(pmap(r.lokasi)) + '" target="_blank" rel="noopener">Lokasi</a>' : ''].filter(Boolean).join(' · ') : '';
-      return '<div class="li s' + (r && r.status ? (L[r.status] || 'N') : 'N') + '"><div><b>' + esc(o.nama) + '</b>' + (r && r.status ? '<span class="bdg c' + (L[r.status] || '') + '">' + esc(r.status) + '</span>' : '<span class="bdg">Belum presensi</span>') +
+      return '<div class="li s' + (r && r.status ? (L[r.status] || 'N') : 'N') + '"><div><b>' + esc(o.nama) + '</b>' + (r && r.status ? '<span class="bdg c' + (L[r.status] || '') + '">' + esc(stL(r.status)) + '</span>' : '<span class="bdg">Belum presensi</span>') +
         '<span class="meta">' + (o.sekolah ? esc(o.sekolah) + ' · ' : '') + (r ? (r.gelombang ? 'Gel. ' + esc(r.gelombang) + ' · ' : '') + 'Jam masuk ' + jam(r.masuk) + (r.catatan ? ' · ' + esc(r.catatan) : '') : 'Belum ada catatan') + '</span>' + (lk ? '<span class="meta">' + lk + '</span>' : '') +
         '</div><div class="acts"><button class="bt" data-act="editst" data-id="' + esc(o.kode) + '">Edit</button>' + (r ? '<button class="bt dng" data-act="delst" data-id="' + esc(o.kode) + '">Hapus</button>' : '') + '</div></div>';
     }).join('') : '<p class="meta">Belum ada akun siswa.</p>');
@@ -1508,6 +1529,7 @@ function presSet_() {
   var p = A.p, st = A.d.settings;
   return '<h3 style="margin:8px 0">Pengaturan presensi</h3><form data-form="pset">' +
     fld(['presensi_jam_masuk', 'Jam masuk gelombang 1', 'time'], st.presensi_jam_masuk) + fld(['presensi_jam_masuk2', 'Jam masuk gelombang 2', 'time'], st.presensi_jam_masuk2) +
+    fld(['presensi_akhir1', 'Batas akhir gelombang 1', 'time', 'Lewat jam ini siswa otomatis masuk gelombang 2. Datang sebelum jam masuk = Hadir (Terlalu cepat); lewat toleransi = Hadir (Terlambat).'], st.presensi_akhir1) + fld(['presensi_akhir2', 'Batas akhir gelombang 2', 'time', 'Lewat jam ini presensi masuk ditutup.'], st.presensi_akhir2) +
     fld(['presensi_toleransi', 'Toleransi keterlambatan (menit)', 'number'], st.presensi_toleransi) +
     '<div class="fg"><label for="f_h6">Hari kerja</label><select id="f_h6" name="presensi_hari6"><option value="tidak"' + (st.presensi_hari6 !== 'ya' ? ' selected' : '') + '>Senin – Jumat</option><option value="ya"' + (st.presensi_hari6 === 'ya' ? ' selected' : '') + '>Senin – Sabtu</option></select><small>Hari di luar ini tidak dihitung Alpa di Rekap Harian.</small></div>' +
     fld(['presensi_libur', 'Tanggal libur', 'text', 'Format 2026-12-25, pisahkan dengan koma. Tidak dihitung Alpa.'], st.presensi_libur) +
@@ -1544,7 +1566,7 @@ function presDet_() {
   var p = A.p, q = A.sel.split('|'), s = p.siswa.filter(function (x) { return x.kode === q[0]; })[0] || {nama: q[0], daily: {}};
   var r = p.recs.filter(function (x) { return String(x.kode) === q[0] && String(x.tanggal) === q[1]; })[0], h;
   if (r) {
-    h = '<p>Status <b>' + esc(r.status || '–') + '</b>' + (r.gelombang ? ' · Gelombang ' + esc(r.gelombang) : '') + ' · Jam masuk <b>' + jam(r.masuk) + '</b></p>' +
+    h = '<p>Status <b>' + esc(r.status ? stL(r.status) : '–') + '</b>' + (r.gelombang ? ' · Gelombang ' + esc(r.gelombang) : '') + ' · Jam masuk <b>' + jam(r.masuk) + '</b></p>' +
       (r.catatan ? '<p>Keterangan: ' + esc(r.catatan) + '</p>' : '') +
       '<p>' + [purl(r.foto) ? '<a href="' + esc(purl(r.foto)) + '" target="_blank" rel="noopener">Foto ' + (r.masuk ? 'masuk' : 'bukti') + '</a>' : '', pmap(r.lokasi) ? '<a href="' + esc(pmap(r.lokasi)) + '" target="_blank" rel="noopener">Lihat lokasi</a>' : ''].filter(Boolean).join(' · ') + '</p>' +
       '<div class="acts"><button class="bt" data-act="editrp" data-id="' + esc(r.id) + '">Ubah</button><button class="bt dng" data-act="delrp" data-id="' + esc(r.id) + '">Hapus</button><button class="bt" data-act="cell" data-id="">Tutup</button></div>';
