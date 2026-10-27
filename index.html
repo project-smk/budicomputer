@@ -572,6 +572,12 @@ footer{margin-top:48px;background:color-mix(in srgb,var(--p) 38%,#0A1316);font-s
 .cta h2{color:#fff}.cta p{color:#A9B4D6}
 footer{background:#070A17;color:#A9B4D6;border-top:1px solid var(--line)}
 @media(max-width:639px){.hero{padding:28px 0 8px;gap:18px}.hv{padding:16px;border-radius:20px}.hero p{font-size:15px}.hero .btn:not(.ghost),.hero .btn.ghost{padding:13px 22px}}
+
+/* rev.34: tiga tombol hero (Hubungi Kami, Lihat Postingan, Lihat Layanan) menyesuaikan lebar layar */
+@media(max-width:639px){
+  .hero .bs{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;width:100%}
+  .hero .bs .btn{width:100%;min-height:46px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.2;padding:10px 8px;font-size:13.5px}
+}
 </style>
 </head>
 <body>
@@ -824,12 +830,13 @@ function home() {
   var s = S.s, h = im(s.hero_image), b = waLink(url(s.tombol_link), s.pesan_wa);
   var svl = S.svc || svcLegacy(s), sv = svl.map(svcCard);
   var btn = s.tombol_teks && b ? '<a class="btn" href="' + esc(b) + '" target="_blank" rel="noopener">' + esc(s.tombol_teks) + '</a>' : '';
+  var ghostP = '<button class="btn ghost" type="button" data-scroll="postingan">Lihat Postingan</button>';
   var ghost = sv.length ? '<button class="btn ghost" type="button" data-scroll="layanan">Lihat Layanan</button>' : '';
   $('#view').innerHTML = '<div class="wrap"><section class="hero"><div>' + (s.label_atas ? '<span class="kick">' + esc(s.label_atas) + '</span>' : '') +
-    '<h1>' + esc(s.tagline) + '</h1>' + (s.deskripsi ? '<p>' + esc(s.deskripsi) + '</p>' : '') + ((btn || ghost) ? '<div class="bs">' + btn + ghost + '</div>' : '') + '</div>' +
+    '<h1>' + esc(s.tagline) + '</h1>' + (s.deskripsi ? '<p>' + esc(s.deskripsi) + '</p>' : '') + '<div class="bs">' + btn + ghostP + ghost + '</div>' + '</div>' +
     '<div class="hv">' + (h ? '<img src="' + esc(h) + '" alt="">' : HCHART) + '</div>' + '</section>' +
     (s.info_bar ? '<div class="info">' + esc(s.info_bar) + '</div>' : '') +
-    '<section class="posts"><div class="sh"><h2 class="jp">' + esc(s.judul_postingan) + '</h2>' + (S.total > S.latest.length ? '<a href="#" data-all>Lihat semua</a>' : '') + '</div>' +
+    '<section class="posts" id="postingan"><div class="sh"><h2 class="jp">' + esc(s.judul_postingan) + '</h2>' + (S.total > S.latest.length ? '<a href="#" data-all>Lihat semua</a>' : '') + '</div>' +
     (S.latest.length ? '<div class="grid">' + S.latest.map(card).join('') + '</div>' : '<p class="meta">Belum ada postingan.</p>') + '</section>' +
     (sv.length ? '<section class="sec" id="layanan"><div class="sh"><h2>' + esc(s.judul_layanan || 'Layanan') + '</h2>' + (S.svcTotal > svl.length ? '<a href="#" data-allsvc>Lihat semua</a>' : '') + '</div><div class="svc">' + sv.join('') + '</div></section>' : '') +
     (s.kontak_teks ? '<section class="cta"><div><h2>' + esc(s.judul_kontak || 'Hubungi Kami') + '</h2><p>' + esc(s.kontak_teks) + '</p></div>' + btn + '</section>' : '') + '</div>';
