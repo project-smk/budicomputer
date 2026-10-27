@@ -529,8 +529,11 @@ footer{margin-top:48px;background:color-mix(in srgb,var(--p) 38%,#0A1316);font-s
   .card:hover .ph{transform:none;box-shadow:none}
   .card:hover .more::after{transform:none}
   .card:hover .more{text-decoration:none}
-  .sc:hover .n{transform:none;background:var(--p)}
+  .sc:hover .n{transform:scale(1.12) rotate(-6deg);background:var(--a)}
 }
+/* mode gelap: tombol/nomor beraksen terang memakai teks gelap agar jelas */
+:root[data-theme=dark] .hero .btn:not(.ghost),:root[data-theme=dark] .cta .btn{color:#0E1233}
+@media(hover:hover){:root[data-theme=dark] .sc:hover .n{color:#0E1233}}
 </style>
 </head>
 <body>
